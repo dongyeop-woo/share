@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Breaking Share | 주식 인사이트 허브</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="assets/app.js" defer></script>
+</head>
+<body>
+    <header class="site-header">
+        <div class="brand">
+            <span class="brand-mark" aria-hidden="true">📈</span>
+            <div>
+                <p class="brand-name">Breaking Share</p>
+                <p class="brand-tagline">지금 가장 빠른 주식 인사이트</p>
+            </div>
+        </div>
+        <nav class="site-nav" aria-label="주요 메뉴"></nav>
+        <div class="header-actions">
+            <a class="auth-trigger" id="auth-toggle" href="login.html">로그인</a>
+            <div class="auth-status" id="auth-status" hidden>
+                <span id="auth-display-name"></span>
+                <button class="auth-logout" id="auth-logout" type="button">로그아웃</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section id="market" class="content-section">
+            <header class="section-header">
+                <div>
+                    <h2>주식 현황</h2>
+                    <p>대표 지수와 섹터별 움직임을 한눈에 확인하세요. 데이터는 최대 5분 지연됩니다.</p>
+                </div>
+                <a class="section-action" href="market.html">모두 보기 →</a>
+            </header>
+            <div class="market-overview">
+                <table>
+                    <caption class="sr-only">대표 지수 및 섹터별 등락</caption>
+                    <thead>
+                        <tr>
+                            <th scope="col">종목</th>
+                            <th scope="col">현재가</th>
+                            <th scope="col">변동</th>
+                            <th scope="col">변동률</th>
+                        </tr>
+                    </thead>
+                    <tbody id="market-table"></tbody>
+                </table>
+                <aside class="market-note" id="market-note">
+                    변동성 지수(VIX)가 상승 중입니다. 리스크 관리 전략을 확인하세요.
+                </aside>
+            </div>
+        </section>
+
+        <section id="highlight" class="content-section">
+            <div class="highlight-layout">
+                <article class="highlight-card">
+                    <header>
+                        <h2>오늘의 하이라이트</h2>
+                        <p class="highlight-date" id="highlight-date">2025-11-11</p>
+                    </header>
+                    <p id="highlight-summary">
+                        주요 증시는 기술주 랠리 지속으로 상승 마감. 연준 위원 발언에 따라 변동성 확대 가능성 주의.
+                    </p>
+                    <a href="#news" class="highlight-link">뉴스 피드 살펴보기 →</a>
+                </article>
+            </div>
+        </section>
+
+        <section id="news" class="content-section">
+            <header class="section-header">
+                <h2>뉴스 피드</h2>
+                <p>오늘 시장을 움직인 핵심 헤드라인을 빠르게 모았습니다.</p>
+            </header>
+            <div class="card-grid" id="news-list" aria-live="polite"></div>
+        </section>
+
+        <section id="policies" class="content-section">
+            <header class="section-header">
+                <h2>조항</h2>
+                <p>투자 원칙과 커뮤니티 가이드라인을 꼭 확인하세요.</p>
+            </header>
+            <ol class="policies-list" id="policy-list"></ol>
+        </section>
+
+        <section id="recommendations" class="content-section">
+            <header class="section-header">
+                <h2>추천 종목</h2>
+                <p>데이터 기반 알파 전략으로 선별한 포트폴리오.</p>
+            </header>
+            <div class="recommendations-grid" id="recommendations-list"></div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div>
+            <p class="footer-brand">Breaking Share</p>
+            <p class="footer-copy">© 2025 Breaking Share. All rights reserved.</p>
+        </div>
+        <nav aria-label="하단 메뉴">
+            <a href="#policies">이용 약관</a>
+            <a href="#policies">개인정보 처리방침</a>
+            <a href="#tools">고객 지원</a>
+        </nav>
+    </footer>
+</body>
+</html>
+
