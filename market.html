@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeNote | 주식 현황 전체보기</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.6/dist/chart.umd.min.js" integrity="sha384-jmwWepes0vhM0K1pyEUzOPBYH0PpaNH43x14zNGHJavLJ6IAbxZpLd7f6G8MCoCZ" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial@4.3.0/dist/chartjs-chart-financial.umd.min.js"></script>
+    <script src="assets/app.js" defer></script>
+    <script src="assets/market.js" defer></script>
+</head>
+<body>
+    <header class="site-header">
+        <a href="index.html" class="brand" style="text-decoration: none; color: inherit;">
+            <span class="brand-mark" aria-hidden="true">📈</span>
+            <div>
+                <p class="brand-name">TradeNote</p>
+                <p class="brand-tagline">쉽고 간단하게</p>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="theme-toggle" id="theme-toggle" type="button" aria-label="테마 변경" title="다크모드/라이트모드 전환">
+                <span class="theme-icon">⚙️</span>
+            </button>
+            <a class="auth-trigger" id="auth-toggle" href="login.html">로그인</a>
+            <div class="auth-status" id="auth-status" hidden>
+                <span id="auth-display-name"></span>
+                <button class="auth-logout" id="auth-logout" type="button">로그아웃</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section class="content-section">
+            <div class="highlight-layout">
+                <article class="highlight-card">
+                    <header>
+                        <h1>주식 현황 전체보기</h1>
+                        <p>미국 주식 주요 지수와 종목을 최대 5분 지연으로 탐색하고, 원하는 티커를 검색해 차트와 지표를 확인하세요.</p>
+                    </header>
+                    <form id="symbol-search-form" class="search-form" novalidate>
+                        <label class="sr-only" for="symbol-search-input">종목 검색</label>
+                        <input id="symbol-search-input" type="search" placeholder="티커 또는 종목명을 입력하세요 (예: NVDA, Apple)" autocomplete="off">
+                        <button type="submit">검색</button>
+                    </form>
+                    <div class="search-results" id="search-results" aria-live="polite"></div>
+                </article>
+            </div>
+        </section>
+
+        <section class="content-section">
+            <header class="section-header">
+                <div>
+                    <h2>주요 지수 &amp; 섹터</h2>
+                    <p>대표 ETF를 통해 시장의 온도를 한눈에 살펴보세요. 데이터는 최대 5분 지연됩니다.</p>
+                </div>
+            </header>
+            <div class="market-overview-grid" id="market-overview-grid"></div>
+        </section>
+
+        <section class="content-section" id="market-detail">
+            <header class="section-header">
+                <div>
+                    <h2 id="detail-symbol">종목선택</h2>
+                    <p id="detail-name">검색하거나 카드에서 종목을 선택하세요.</p>
+                </div>
+                <div class="detail-price">
+                    <span id="detail-price">-</span>
+                    <span id="detail-change" class="detail-change">-</span>
+                    <span id="detail-updated" class="detail-updated">-</span>
+                </div>
+            </header>
+            <div class="market-detail-card">
+                <div class="detail-stats">
+                    <div>
+                        <p>고가</p>
+                        <strong id="detail-high">-</strong>
+                    </div>
+                    <div>
+                        <p>저가</p>
+                        <strong id="detail-low">-</strong>
+                    </div>
+                    <div>
+                        <p>시가</p>
+                        <strong id="detail-open">-</strong>
+                    </div>
+                    <div>
+                        <p>전일 종가</p>
+                        <strong id="detail-previous">-</strong>
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="market-chart" height="320"></canvas>
+                </div>
+                <div class="chart-toolbar">
+                    <div class="range-control">
+                        <label for="range-months">조회 기간</label>
+                        <input type="range" id="range-months" min="1" max="12" value="4" step="1">
+                        <span id="range-months-label">최근 4개월</span>
+                    </div>
+                    <div class="ma-legend" aria-hidden="true">
+                        <span><span class="ma-dot ma-5"></span>MA5</span>
+                        <span><span class="ma-dot ma-20"></span>MA20</span>
+                        <span><span class="ma-dot ma-40"></span>MA40</span>
+                        <span><span class="ma-dot ma-60"></span>MA60</span>
+                    </div>
+                </div>
+                <div class="chart-insights">
+                    <div class="recent-table-wrapper">
+                        <table class="recent-table" aria-describedby="detail-symbol">
+                            <thead>
+                                <tr>
+                                    <th scope="col">날짜</th>
+                                    <th scope="col">종가</th>
+                                    <th scope="col">전일 대비</th>
+                                    <th scope="col">MA20</th>
+                                    <th scope="col">신호</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-table-body"></tbody>
+                        </table>
+                    </div>
+                    <aside class="ma-status" id="ma-status" aria-live="polite">
+                        이동평균 정보를 계산중입니다.
+                    </aside>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="site-footer">
+        <div>
+            <p class="footer-brand">TradeNote</p>
+            <p class="footer-copy">© 2025 TradeNote. All rights reserved.</p>
+        </div>
+        <nav aria-label="하단 메뉴">
+            <a href="index.html#policies">이용 약관</a>
+            <a href="index.html#policies">개인정보 처리방침</a>
+            <a href="index.html#tools">고객 지원</a>
+        </nav>
+    </footer>
+</body>
+</html>
+

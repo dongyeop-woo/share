@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeNote | 주식 인사이트 허브</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="assets/app.js" defer></script>
+</head>
+<body>
+    <header class="site-header">
+        <a href="index.html" class="brand" style="text-decoration: none; color: inherit;">
+            <span class="brand-mark" aria-hidden="true">📈</span>
+            <div>
+                <p class="brand-name">TradeNote</p>
+                <p class="brand-tagline">쉽고 간단하게</p>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="theme-toggle" id="theme-toggle" type="button" aria-label="테마 변경" title="다크모드/라이트모드 전환">
+                <span class="theme-icon">⚙️</span>
+            </button>
+            <a class="auth-trigger" id="auth-toggle" href="login.html">로그인</a>
+            <div class="auth-status" id="auth-status" hidden>
+                <span id="auth-display-name"></span>
+                <button class="auth-logout" id="auth-logout" type="button">로그아웃</button>
+            </div>
+        </div>
+    </header>
+
+    <main>
+        <section id="trading" class="content-section">
+            <header class="section-header">
+                <h2>매매내역 관리</h2>
+                <p>매매 내역을 기록하고 분석하세요.</p>
+            </header>
+
+            <div class="trading-grid">
+                <!-- 첫 번째 줄: 오늘 매매내역 | 이번 달 매매내역 -->
+                <div class="trading-section">
+                    <div class="trading-section-header">
+                        <h3>오늘 매매내역</h3>
+                        <button type="button" class="new-btn" data-modal="today-trading-modal">
+                            <span>+ 새로 만들기</span>
+                        </button>
+                    </div>
+                    <div class="trading-section-content">
+                        <div class="trading-list-scroll" id="today-trading-list"></div>
+                    </div>
+                </div>
+
+                <div class="trading-section">
+                    <div class="trading-section-header">
+                        <h3>이번 달 매매내역</h3>
+                        <button type="button" class="new-btn" data-modal="month-trading-modal">
+                            <span>+ 새로 만들기</span>
+                        </button>
+                    </div>
+                    <div class="trading-section-content">
+                        <div class="trading-list-scroll" id="month-trading-list"></div>
+                    </div>
+                </div>
+
+                <!-- 두 번째 줄: 오늘 총 수익금 (원형 차트) | 총 매매내역 -->
+                <div class="trading-section">
+                    <div class="trading-section-header">
+                        <h3>오늘 총 수익금</h3>
+                    </div>
+                    <div class="trading-section-content">
+                        <div class="profit-chart-container">
+                            <div class="profit-chart" id="profit-chart">
+                                <svg class="profit-pie-chart" viewBox="0 0 200 200">
+                                    <circle class="profit-pie-bg" cx="100" cy="100" r="80" fill="none" stroke="#e0e0e0" stroke-width="20"></circle>
+                                    <g id="profit-pie-slices"></g>
+                                </svg>
+                                <div class="profit-chart-center">
+                                    <p class="summary-amount" id="today-total-profit">0원</p>
+                                </div>
+                            </div>
+                            <div class="profit-legend" id="profit-legend"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="trading-section">
+                    <div class="trading-section-header">
+                        <h3>총 매매내역</h3>
+                    </div>
+                    <div class="trading-section-content">
+                        <div class="trading-list-scroll" id="all-trading-list"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- 로그인 필요 오버레이 -->
+            <div class="login-block-overlay" id="login-overlay" aria-hidden="true">
+                <div class="login-block-content" role="dialog" aria-labelledby="login-block-title" aria-describedby="login-block-desc">
+                    <h3 id="login-block-title">로그인이 필요합니다</h3>
+                    <p id="login-block-desc">매매일지를 작성하고 보려면 로그인해주세요.</p>
+                    <a href="login.html" class="login-block-button" aria-label="로그인 페이지로 이동">로그인</a>
+                </div>
+            </div>
+        </section>
+
+        <section id="highlight" class="content-section">
+            <div class="highlight-layout">
+                <article class="highlight-card">
+                    <header>
+                        <h2>오늘의 하이라이트</h2>
+                        <p class="highlight-date" id="highlight-date"></p>
+                    </header>
+                    <p id="highlight-summary" aria-live="polite">시장 데이터를 불러오는 중입니다...</p>
+                    <a href="#news" class="highlight-link">뉴스 피드 살펴보기 →</a>
+                </article>
+            </div>
+        </section>
+
+        <section id="news" class="content-section">
+            <header class="section-header">
+                <h2>뉴스 피드</h2>
+                <p>오늘 시장을 움직인 핵심 헤드라인을 빠르게 모았습니다.</p>
+            </header>
+            <div class="card-grid" id="news-list" aria-live="polite"></div>
+        </section>
+
+        <section id="policies" class="content-section">
+            <header class="section-header">
+                <h2>조항</h2>
+                <p>투자 원칙과 커뮤니티 가이드라인을 꼭 확인하세요.</p>
+            </header>
+            <ol class="policies-list" id="policy-list">
+                <li>모든 정보는 교육 목적으로 제공되며 투자 판단의 최종 책임은 본인에게 있습니다.</li>
+                <li>허위 정보, 타인 비방, 불법 리딩 등은 즉시 제재됩니다.</li>
+                <li>시장 변동성 확대 시 손절 기준과 포지션 사이징을 명확히 설정하세요.</li>
+            </ol>
+        </section>
+    </main>
+
+    <!-- 사이드 패널 모달 -->
+    <div class="side-modal-overlay" id="modal-overlay"></div>
+    
+    <!-- 오늘 매매내역 모달 -->
+    <div class="side-modal" id="today-trading-modal">
+        <div class="side-modal-header">
+            <h2>새 매매내역 추가</h2>
+            <button type="button" class="side-modal-close" data-modal="today-trading-modal">×</button>
+        </div>
+        <div class="side-modal-body">
+            <form class="trading-form" id="today-trading-form">
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="today-date">날짜</label>
+                        <input type="date" id="today-date" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="today-stock">종목명</label>
+                        <input type="text" id="today-stock" placeholder="예: AAPL" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="today-position">포지션</label>
+                        <select id="today-position" required>
+                            <option value="long">롱</option>
+                            <option value="short">숏</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="today-result">승무패</label>
+                        <select id="today-result">
+                            <option value="">선택 안함</option>
+                            <option value="win">승</option>
+                            <option value="draw">무</option>
+                            <option value="loss">패</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="today-profit">수익금 (원)</label>
+                        <input type="number" id="today-profit" placeholder="0" required>
+                    </div>
+                    <div class="form-field form-field-full">
+                        <label for="today-chart">차트 이미지</label>
+                        <div class="image-upload-container">
+                            <input type="file" id="today-chart" accept="image/*" class="image-upload-input">
+                            <label for="today-chart" class="image-upload-label">
+                                <span class="upload-icon">📷</span>
+                                <span class="upload-text">이미지 선택</span>
+                            </label>
+                            <div class="image-preview" id="today-chart-preview"></div>
+                            <button type="button" class="image-remove-btn" id="today-chart-remove" style="display: none;">삭제</button>
+                        </div>
+                    </div>
+                    <div class="form-field form-field-full">
+                        <label for="today-profit-reason">익절한 이유</label>
+                        <textarea id="today-profit-reason" placeholder="익절한 이유를 입력하세요" rows="3"></textarea>
+                    </div>
+                    <div class="form-field form-field-full">
+                        <label for="today-loss-reason">손절한 이유</label>
+                        <textarea id="today-loss-reason" placeholder="손절한 이유를 입력하세요" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="cta-button">추가</button>
+                    <button type="button" class="cancel-btn" data-modal="today-trading-modal">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 이번 달 매매내역 모달 -->
+    <div class="side-modal" id="month-trading-modal">
+        <div class="side-modal-header">
+            <h2>새 매매내역 추가</h2>
+            <button type="button" class="side-modal-close" data-modal="month-trading-modal">×</button>
+        </div>
+        <div class="side-modal-body">
+            <form class="trading-form" id="month-trading-form">
+                <div class="form-row">
+                    <div class="form-field">
+                        <label for="month-date">날짜</label>
+                        <input type="date" id="month-date" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="month-stock">종목명</label>
+                        <input type="text" id="month-stock" placeholder="예: AAPL" required>
+                    </div>
+                    <div class="form-field">
+                        <label for="month-position">포지션</label>
+                        <select id="month-position" required>
+                            <option value="long">롱</option>
+                            <option value="short">숏</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="month-result">승무패</label>
+                        <select id="month-result">
+                            <option value="">선택 안함</option>
+                            <option value="win">승</option>
+                            <option value="draw">무</option>
+                            <option value="loss">패</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="month-profit">수익금 (원)</label>
+                        <input type="number" id="month-profit" placeholder="0" required>
+                    </div>
+                    <div class="form-field form-field-full">
+                        <label for="month-chart">차트 이미지</label>
+                        <div class="image-upload-container">
+                            <input type="file" id="month-chart" accept="image/*" class="image-upload-input">
+                            <label for="month-chart" class="image-upload-label">
+                                <span class="upload-icon">📷</span>
+                                <span class="upload-text">이미지 선택</span>
+                            </label>
+                            <div class="image-preview" id="month-chart-preview"></div>
+                            <button type="button" class="image-remove-btn" id="month-chart-remove" style="display: none;">삭제</button>
+                        </div>
+                    </div>
+                    <div class="form-field form-field-full">
+                        <label for="month-profit-reason">익절한 이유</label>
+                        <textarea id="month-profit-reason" placeholder="익절한 이유를 입력하세요" rows="3"></textarea>
+                    </div>
+                    <div class="form-field form-field-full">
+                        <label for="month-loss-reason">손절한 이유</label>
+                        <textarea id="month-loss-reason" placeholder="손절한 이유를 입력하세요" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="cta-button">추가</button>
+                    <button type="button" class="cancel-btn" data-modal="month-trading-modal">취소</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    
+
+    <footer class="site-footer">
+        <div>
+            <p class="footer-brand">TradeNote</p>
+            <p class="footer-copy">© 2025 TradeNote. All rights reserved.</p>
+        </div>
+        <nav aria-label="하단 메뉴">
+            <a href="#policies">이용 약관</a>
+            <a href="#policies">개인정보 처리방침</a>
+            <a href="#tools">고객 지원</a>
+        </nav>
+    </footer>
+</body>
+</html>
+

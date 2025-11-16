@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeNote | 회원가입</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="assets/app.js" defer></script>
+    <script src="assets/register.js" defer></script>
+</head>
+<body>
+    <header class="site-header">
+        <a href="index.html" class="brand" style="text-decoration: none; color: inherit;">
+            <span class="brand-mark" aria-hidden="true">📈</span>
+            <div>
+                <p class="brand-name">TradeNote</p>
+                <p class="brand-tagline">쉽고 간단하게</p>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="theme-toggle" id="theme-toggle" type="button" aria-label="테마 변경" title="다크모드/라이트모드 전환">
+                <span class="theme-icon">⚙️</span>
+            </button>
+            <a class="auth-trigger" id="auth-toggle" href="login.html">로그인</a>
+            <div class="auth-status" id="auth-status" hidden>
+                <span id="auth-display-name"></span>
+                <button class="auth-logout" id="auth-logout" type="button">로그아웃</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="content-section">
+        <article class="highlight-card" style="max-width: 520px; margin: 0 auto;">
+            <header>
+                <h1>회원가입</h1>
+                <p>TradeNote에 가입하고 매매내역을 관리하세요.</p>
+            </header>
+            <form class="auth-form" id="register-form" novalidate>
+                <div class="auth-field">
+                    <label for="register-username">아이디</label>
+                    <input id="register-username" name="username" type="text" autocomplete="username" placeholder="아이디를 입력하세요 (3자 이상 20자 이하)" required minlength="3" maxlength="20">
+                </div>
+                <div class="auth-field">
+                    <label for="register-password">비밀번호</label>
+                    <input id="register-password" name="password" type="password" autocomplete="new-password" placeholder="비밀번호를 입력하세요 (8자 이상)" required minlength="8" maxlength="64">
+                </div>
+                <div class="auth-field">
+                    <label for="register-displayname">닉네임</label>
+                    <input id="register-displayname" name="displayName" type="text" autocomplete="nickname" placeholder="닉네임을 입력하세요" required minlength="1" maxlength="40">
+                </div>
+                <button class="cta-button full-width" id="register-submit" type="submit">회원가입</button>
+                <p class="auth-message" id="auth-message" role="status" aria-live="polite"></p>
+            </form>
+            <div style="text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--card-border);">
+                <p style="color: var(--text-muted); margin: 0 0 0.75rem;">이미 계정이 있으신가요?</p>
+                <a href="login.html" class="auth-trigger" style="display: inline-block;">로그인</a>
+            </div>
+        </article>
+    </main>
+
+    <footer class="site-footer">
+        <div>
+            <p class="footer-brand">TradeNote</p>
+            <p class="footer-copy">© 2025 TradeNote. All rights reserved.</p>
+        </div>
+        <nav aria-label="하단 메뉴">
+            <a href="index.html#policies">이용 약관</a>
+            <a href="index.html#policies">개인정보 처리방침</a>
+            <a href="index.html#recommendations">추천 종목</a>
+        </nav>
+    </footer>
+</body>
+</html>
+
