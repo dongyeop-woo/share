@@ -14,7 +14,16 @@ from typing import List, Mapping, Sequence
 import numpy as np
 import pandas as pd
 import logging
-from transformers import pipeline
+
+# transformers를 선택적으로 import (없으면 AI 기능 비활성화)
+logger = logging.getLogger(__name__)
+
+try:
+    from transformers import pipeline
+    TRANSFORMERS_AVAILABLE = True
+except ImportError:
+    TRANSFORMERS_AVAILABLE = False
+    logger.warning("transformers not available, AI summarization will be disabled")
 
 SUMMARIZER_MODEL = "lcw99/t5-base-korean-text-summary"
 # Try multiple translation models in order of preference
@@ -24,8 +33,6 @@ TRANSLATION_MODELS = [
 TRANSLATION_MODEL = TRANSLATION_MODELS[0]
 _DEFAULT_MAX_TOKENS = 180
 _DEFAULT_MIN_TOKENS = 45
-
-logger = logging.getLogger(__name__)
 _TRANSLATOR_PIPELINE = None
 _TRANSLATOR_UNAVAILABLE = False
 
@@ -38,11 +45,17 @@ def _get_summarizer():
     The model is small enough to run on CPU for prototyping,
     but you can set the `device` argument to leverage GPU when available.
     """
-    return pipeline(
-        task="summarization",
-        model=SUMMARIZER_MODEL,
-        tokenizer=SUMMARIZER_MODEL,
-    )
+    if not TRANSFORMERS_AVAILABLE:
+        return None
+    try:
+        return pipeline(
+            task="summarization",
+            model=SUMMARIZER_MODEL,
+            tokenizer=SUMMARIZER_MODEL,
+        )
+    except Exception as e:
+        logger.warning(f"Failed to load summarizer: {e}")
+        return None
 
 
 def _get_translator():
@@ -87,19 +100,27 @@ def summarize_headline(text: str, max_tokens: int = _DEFAULT_MAX_TOKENS) -> str:
         max_tokens: Upper bound for generated summary tokens.
 
     Returns:
-        A summarized string in Korean.
+        A summarized string in Korean. Returns original text if transformers unavailable.
     """
     if not text:
         return ""
 
     summarizer = _get_summarizer()
-    output = summarizer(
-        text,
-        max_length=max_tokens,
-        min_length=min(_DEFAULT_MIN_TOKENS, max_tokens // 2),
-        do_sample=False,
-    )
-    return output[0]["summary_text"]
+    if summarizer is None:
+        # transformers가 없으면 원문의 앞부분만 반환 (간단한 fallback)
+        return text[:max_tokens] if len(text) > max_tokens else text
+    
+    try:
+        output = summarizer(
+            text,
+            max_length=max_tokens,
+            min_length=min(_DEFAULT_MIN_TOKENS, max_tokens // 2),
+            do_sample=False,
+        )
+        return output[0]["summary_text"]
+    except Exception as e:
+        logger.warning(f"Summarization failed: {e}, returning original text")
+        return text[:max_tokens] if len(text) > max_tokens else text
 
 
 def translate_to_korean(text: str) -> str:

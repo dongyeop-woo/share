@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>TradeNote | 뉴스</title>
     <link rel="stylesheet" href="assets/styles.css">
     <script src="assets/app.js" defer></script>
@@ -62,7 +63,12 @@ let currentNewsType = "korea";
 
 const fetchNewsByType = async (type) => {
     try {
-        const API_BASE = `http://${window.location.hostname}:8000`;
+        // 프로덕션 환경 감지
+        const isProduction = window.location.hostname === 'dongyeop-woo.github.io' || 
+                             window.location.hostname.endsWith('.github.io');
+        const API_BASE = isProduction 
+            ? 'https://54.253.167.33'  // FastAPI (Nginx를 통해 /api/ 경로로 라우팅, HTTPS)
+            : `http://${window.location.hostname}:8000`;
         const endpoint = type === "korea" ? "/api/news/korea" : "/api/news/usa";
         const response = await fetch(`${API_BASE}${endpoint}`);
         if (!response.ok) throw new Error("뉴스 API 실패");
