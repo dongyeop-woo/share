@@ -65,9 +65,11 @@ const fetchNewsByType = async (type) => {
     try {
         // 프로덕션 환경 감지
         const isProduction = window.location.hostname === 'dongyeop-woo.github.io' || 
-                             window.location.hostname.endsWith('.github.io');
+                             window.location.hostname.endsWith('.github.io') ||
+                             window.location.hostname === 'weektalk.co.kr' ||
+                             window.location.hostname === 'www.weektalk.co.kr';
         const API_BASE = isProduction 
-            ? 'http://54.253.167.33'  // FastAPI (Nginx를 통해 /api/ 경로로 라우팅)
+            ? 'https://weektalk.co.kr'  // FastAPI (Nginx를 통해 /api/ 경로로 라우팅, HTTPS)
             : `http://${window.location.hostname}:8000`;
         const endpoint = type === "korea" ? "/api/news/korea" : "/api/news/usa";
         const response = await fetch(`${API_BASE}${endpoint}`);

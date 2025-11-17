@@ -1,18 +1,19 @@
 // Use current host to support mobile access over LAN (avoid hardcoded localhost)
 const CURRENT_HOST = window.location.hostname || "localhost";
 
-// 프로덕션 환경 감지 (GitHub Pages)
+// 프로덕션 환경 감지 (GitHub Pages 또는 도메인)
 const isProduction = window.location.hostname === 'dongyeop-woo.github.io' || 
-                     window.location.hostname.endsWith('.github.io');
+                     window.location.hostname.endsWith('.github.io') ||
+                     window.location.hostname === 'weektalk.co.kr' ||
+                     window.location.hostname === 'www.weektalk.co.kr';
 
-// 프로덕션에서는 AWS 백엔드 URL 사용, 개발 환경에서는 로컬 호스트 사용
-// Nginx를 통해 접근하므로 포트 번호 없이 IP만 사용
+// 프로덕션에서는 도메인 사용 (HTTPS), 개발 환경에서는 로컬 호스트 사용
 const API_BASE = isProduction 
-    ? 'http://54.253.167.33'  // FastAPI (Nginx를 통해 /api/ 경로로 라우팅)
+    ? 'https://weektalk.co.kr'  // FastAPI (Nginx를 통해 /api/ 경로로 라우팅, HTTPS)
     : `http://${CURRENT_HOST}:8000`;
 
 const AUTH_API_BASE = isProduction
-    ? 'http://54.253.167.33'  // Spring Boot (Nginx를 통해 /api/auth 경로로 라우팅)
+    ? 'https://weektalk.co.kr'  // Spring Boot (Nginx를 통해 /api/auth 경로로 라우팅, HTTPS)
     : `http://${CURRENT_HOST}:8001`;
 
 const AUTH_STORAGE_KEY = "breakingShareUser";
