@@ -7,12 +7,13 @@ const isProduction = window.location.hostname === 'dongyeop-woo.github.io' ||
 
 // 프로덕션에서는 AWS 백엔드 URL 사용, 개발 환경에서는 로컬 호스트 사용
 // Nginx를 통해 접근하므로 포트 번호 없이 IP만 사용
+// Self-signed 인증서 사용으로 HTTPS 사용
 const API_BASE = isProduction 
-    ? 'http://3.27.85.105'  // FastAPI (Nginx를 통해 /api/ 경로로 라우팅)
+    ? 'https://3.27.85.105'  // FastAPI (Nginx를 통해 /api/ 경로로 라우팅, HTTPS)
     : `http://${CURRENT_HOST}:8000`;
 
 const AUTH_API_BASE = isProduction
-    ? 'http://3.27.85.105'  // Spring Boot (Nginx를 통해 /api/auth 경로로 라우팅)
+    ? 'https://3.27.85.105'  // Spring Boot (Nginx를 통해 /api/auth 경로로 라우팅, HTTPS)
     : `http://${CURRENT_HOST}:8001`;
 
 const AUTH_STORAGE_KEY = "breakingShareUser";
