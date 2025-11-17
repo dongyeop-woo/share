@@ -17,7 +17,11 @@ import logging
 from transformers import pipeline
 
 SUMMARIZER_MODEL = "lcw99/t5-base-korean-text-summary"
-TRANSLATION_MODEL = "Helsinki-NLP/opus-mt-en-ko"
+# Try multiple translation models in order of preference
+TRANSLATION_MODELS = [
+    "facebook/mbart-large-50-many-to-many-mmt",  # Multilingual model (supports en-ko)
+]
+TRANSLATION_MODEL = TRANSLATION_MODELS[0]
 _DEFAULT_MAX_TOKENS = 180
 _DEFAULT_MIN_TOKENS = 45
 
@@ -44,20 +48,32 @@ def _get_summarizer():
 def _get_translator():
     """
     Lazily load the English→Korean translation pipeline once per process.
+    Tries multiple models in order of preference.
     """
     global _TRANSLATOR_PIPELINE, _TRANSLATOR_UNAVAILABLE
     if _TRANSLATOR_UNAVAILABLE:
-        return None
+        # 재시도 로직: 한 번 실패해도 다시 시도
+        logger.info("Retrying translation model load...")
+        _TRANSLATOR_UNAVAILABLE = False
     if _TRANSLATOR_PIPELINE is None:
-        try:
-            _TRANSLATOR_PIPELINE = pipeline(
-                task="translation",
-                model=TRANSLATION_MODEL,
-                tokenizer=TRANSLATION_MODEL,
-            )
-        except Exception as exc:  # noqa: BLE001
+        # Try each model in order
+        for model_name in TRANSLATION_MODELS:
+            try:
+                logger.info(f"Attempting to load translation model: {model_name}")
+                _TRANSLATOR_PIPELINE = pipeline(
+                    task="translation",
+                    model=model_name,
+                )
+                logger.info(f"Translation model loaded successfully: {model_name}")
+                break
+            except Exception as exc:  # noqa: BLE001
+                logger.warning(f"Failed to load translation model {model_name}: {exc}")
+                _TRANSLATOR_PIPELINE = None
+                continue
+        
+        if _TRANSLATOR_PIPELINE is None:
             _TRANSLATOR_UNAVAILABLE = True
-            logger.warning("Translation model unavailable (%s): %s", TRANSLATION_MODEL, exc)
+            logger.error("All translation models failed to load. Translation will be disabled.")
             return None
     return _TRANSLATOR_PIPELINE
 
@@ -88,23 +104,48 @@ def summarize_headline(text: str, max_tokens: int = _DEFAULT_MAX_TOKENS) -> str:
 
 def translate_to_korean(text: str) -> str:
     """
-    Translate English text into Korean using a neural machine translation model.
-
-    Empty inputs are returned as empty strings to avoid unnecessary inference.
+    Translate English text into Korean using deep-translator library.
+    Falls back to original text if translation fails.
     """
     if not text:
         return ""
 
-    translator = _get_translator()
-    if translator is None:
-        return text
-
     try:
-        output = translator(text, clean_up_tokenization_spaces=True)
-        return output[0]["translation_text"]
+        from deep_translator import GoogleTranslator
+        
+        max_length = 500
+        text_to_translate = text[:max_length] if len(text) > max_length else text
+        
+        translator = GoogleTranslator(source='en', target='ko')
+        translated = translator.translate(text_to_translate)
+        
+        if translated and translated != text_to_translate:
+            logger.info(f"Translation successful: {text[:50]}... -> {translated[:50]}...")
+            return translated
+        else:
+            logger.warning("Translation returned same text or empty")
+            return text
+    except ImportError:
+        logger.warning("deep-translator not installed, trying alternative methods")
     except Exception as exc:  # noqa: BLE001
-        logger.warning("Translation failed, returning original text: %s", exc)
-        return text
+        logger.warning(f"Translation failed: {exc}")
+    
+    # Fallback: Try googletrans if available
+    try:
+        from googletrans import Translator
+        translator = Translator()
+        result = translator.translate(text, src='en', dest='ko')
+        if result and result.text:
+            logger.info(f"Translation successful (googletrans): {text[:50]}... -> {result.text[:50]}...")
+            return result.text
+    except ImportError:
+        logger.warning("googletrans not installed")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"googletrans translation failed: {exc}")
+
+    # If all else fails, return original text
+    logger.warning("All translation methods failed, returning original text")
+    return text
 
 
 def _normalize_series(series: pd.Series) -> pd.Series:

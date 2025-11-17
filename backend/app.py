@@ -13,6 +13,7 @@ import logging
 import httpx
 import pandas as pd
 import yfinance as yf
+import feedparser
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
@@ -246,6 +247,22 @@ MARKET_REFRESH_TASK: Optional[asyncio.Task] = None
 NEWS_REFRESH_TASK: Optional[asyncio.Task] = None
 NEWS_CATEGORIES = ["general"]
 
+# RSS 피드 URL 목록
+KOREA_NEWS_RSS = [
+    "https://www.hankyung.com/feed/economy",  # 한국경제
+    "https://www.mk.co.kr/rss/30000041/",  # 매일경제 경제
+    "https://biz.chosun.com/rss/site_biz.xml",  # 조선비즈
+    "https://rss.etnews.com/Section901.xml",  # 전자신문 (요약 포함 가능)
+    "https://www.edaily.co.kr/rss/industry.xml",  # 이데일리 산업
+]
+
+USA_NEWS_RSS = [
+    "https://feeds.finance.yahoo.com/rss/2.0/headline?s=^GSPC&region=US&lang=en-US",  # Yahoo Finance S&P 500
+    "https://feeds.finance.yahoo.com/rss/2.0/headline?s=^DJI&region=US&lang=en-US",  # Yahoo Finance Dow
+    "https://www.cnbc.com/id/100003114/device/rss/rss.html",  # CNBC News
+    "https://feeds.reuters.com/reuters/businessNews",  # Reuters Business
+]
+
 
 async def _fetch_finnhub_news(category: str) -> List[NewsArticle]:
     api_key = os.getenv("FINNHUB_API_KEY")
@@ -277,12 +294,24 @@ async def _fetch_finnhub_news(category: str) -> List[NewsArticle]:
         headline = item.get("headline", "").strip()
         summary = (item.get("summary") or "").strip()
 
+        # Try translation with timeout protection
+        headline_ko = None
+        summary_ko = None
+        try:
+            headline_ko = translate_to_korean(headline) or None
+        except Exception:
+            pass
+        try:
+            summary_ko = translate_to_korean(summary) or None
+        except Exception:
+            pass
+        
         articles.append(
             NewsArticle(
                 headline=headline,
-                headline_ko=translate_to_korean(headline) or None,
+                headline_ko=headline_ko,
                 summary=summary or None,
-                summary_ko=translate_to_korean(summary) or None,
+                summary_ko=summary_ko,
                 url=item.get("url", ""),
                 source=item.get("source"),
                 published_at=published_at,
@@ -294,6 +323,140 @@ async def _fetch_finnhub_news(category: str) -> List[NewsArticle]:
     if not articles:
         raise HTTPException(status_code=404, detail="Finnhub에서 뉴스 데이터를 받지 못했습니다.")
 
+    return articles
+
+
+async def _fetch_rss_news(rss_urls: List[str]) -> List[NewsArticle]:
+    """RSS 피드에서 뉴스를 가져옵니다."""
+    articles: List[NewsArticle] = []
+    
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        for rss_url in rss_urls:
+            try:
+                response = await client.get(rss_url)
+                if response.status_code != 200:
+                    continue
+                
+                feed = feedparser.parse(response.text)
+                
+                for entry in feed.entries[:10]:  # 각 피드에서 최대 10개
+                    # 날짜 파싱
+                    published_at = dt.datetime.utcnow()
+                    if hasattr(entry, 'published_parsed') and entry.published_parsed:
+                        try:
+                            published_at = dt.datetime(*entry.published_parsed[:6], tzinfo=dt.timezone.utc)
+                        except Exception:
+                            pass
+                    elif hasattr(entry, 'updated_parsed') and entry.updated_parsed:
+                        try:
+                            published_at = dt.datetime(*entry.updated_parsed[:6], tzinfo=dt.timezone.utc)
+                        except Exception:
+                            pass
+                    
+                    headline = entry.get("title", "").strip()
+                    # summary, description, content 등에서 요약 추출 시도
+                    summary = (
+                        entry.get("summary", "").strip() 
+                        or entry.get("description", "").strip()
+                        or (entry.get("content", [{}])[0].get("value", "").strip() if entry.get("content") and len(entry.get("content", [])) > 0 else "")
+                    )
+                    url = entry.get("link", "")
+                    source = entry.get("source", {}).get("title", "") if hasattr(entry, "source") else feed.feed.get("title", "")
+                    
+                    # 이미지 추출
+                    image = None
+                    if hasattr(entry, 'media_content') and entry.media_content:
+                        image = entry.media_content[0].get('url')
+                    elif hasattr(entry, 'enclosures') and entry.enclosures:
+                        for enc in entry.enclosures:
+                            if enc.get('type', '').startswith('image'):
+                                image = enc.get('href')
+                                break
+                    
+                    # summary가 빈 문자열이면 None으로 설정
+                    final_summary = summary if summary else None
+                    
+                    articles.append(
+                        NewsArticle(
+                            headline=headline,
+                            headline_ko=headline,  # 한국 뉴스는 이미 한국어
+                            summary=final_summary,
+                            summary_ko=final_summary,
+                            url=url,
+                            source=source,
+                            published_at=published_at,
+                            symbols=[],
+                            image=image,
+                        )
+                    )
+            except Exception as e:
+                logger.warning(f"RSS 피드 파싱 실패 ({rss_url}): {e}")
+                continue
+    
+    # 날짜순으로 정렬 (최신순)
+    articles.sort(key=lambda x: x.published_at, reverse=True)
+    return articles[:20]  # 최대 20개 반환
+
+
+async def _fetch_korea_news() -> List[NewsArticle]:
+    """한국 경제 뉴스를 RSS 피드에서 가져옵니다."""
+    articles = await _fetch_rss_news(KOREA_NEWS_RSS)
+    
+    # 요약이 없는 기사에 대해 처리
+    result = []
+    for article in articles:
+        # RSS 피드에 요약이 없으면 헤드라인을 요약으로 사용
+        # (한국 뉴스 RSS 피드는 대부분 요약을 제공하지 않음)
+        summary_value = article.summary if article.summary else article.headline
+        summary_ko_value = article.summary_ko if article.summary_ko else article.headline
+        
+        # 새로운 객체 생성 (Pydantic 모델은 불변일 수 있음)
+        result.append(
+            NewsArticle(
+                headline=article.headline,
+                headline_ko=article.headline_ko,
+                summary=summary_value,
+                summary_ko=summary_ko_value,
+                url=article.url,
+                source=article.source,
+                published_at=article.published_at,
+                symbols=article.symbols,
+                image=article.image,
+            )
+        )
+    
+    return result
+
+
+async def _fetch_usa_news() -> List[NewsArticle]:
+    """미국 경제 뉴스를 RSS 피드에서 가져옵니다."""
+    articles = await _fetch_rss_news(USA_NEWS_RSS)
+    
+    # RSS 피드에서 뉴스를 가져오지 못한 경우 Finnhub 사용
+    if not articles or len(articles) == 0:
+        logger.info("RSS 피드에서 미국 뉴스를 가져오지 못해 Finnhub를 사용합니다.")
+        try:
+            finnhub_articles = await _fetch_finnhub_news("general")
+            # Finnhub 뉴스 중 미국 관련 뉴스 필터링 (간단히 처음 20개 사용)
+            articles = finnhub_articles[:20]
+        except Exception as e:
+            logger.warning(f"Finnhub에서도 미국 뉴스를 가져오지 못했습니다: {e}")
+            return []
+    
+    # 미국 뉴스는 영어이므로 번역 시도
+    for article in articles:
+        if article.headline and not article.headline_ko:
+            try:
+                article.headline_ko = translate_to_korean(article.headline) or article.headline
+            except Exception:
+                article.headline_ko = article.headline
+        
+        if article.summary and not article.summary_ko:
+            try:
+                article.summary_ko = translate_to_korean(article.summary) or article.summary
+            except Exception:
+                article.summary_ko = article.summary
+    
     return articles
 
 
@@ -311,6 +474,34 @@ async def get_news(category: str = "general") -> List[NewsArticle]:
         raise HTTPException(status_code=503, detail="뉴스 데이터가 준비되지 않았습니다. 잠시 후 다시 시도해주세요.")
 
     return entry[0]
+
+
+@app.get("/api/news/korea", response_model=List[NewsArticle])
+async def get_korea_news() -> List[NewsArticle]:
+    """한국 경제 뉴스를 반환합니다."""
+    key = "korea"
+    # 캐시 무시하고 항상 최신 뉴스 가져오기 (요약 포함)
+    articles = await _fetch_korea_news()
+    async with NEWS_CACHE_LOCK:
+        NEWS_CACHE[key] = (articles, time.time())
+    
+    return articles
+
+
+@app.get("/api/news/usa", response_model=List[NewsArticle])
+async def get_usa_news() -> List[NewsArticle]:
+    """미국 경제 뉴스를 반환합니다."""
+    key = "usa"
+    async with NEWS_CACHE_LOCK:
+        entry = NEWS_CACHE.get(key)
+        if entry and time.time() - entry[1] < NEWS_REFRESH_INTERVAL:
+            return entry[0]
+    
+    articles = await _fetch_usa_news()
+    async with NEWS_CACHE_LOCK:
+        NEWS_CACHE[key] = (articles, time.time())
+    
+    return articles
 
 
 def _get_finnhub_api_key() -> str:

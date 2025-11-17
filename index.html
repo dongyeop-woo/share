@@ -20,13 +20,18 @@
             <button class="theme-toggle" id="theme-toggle" type="button" aria-label="테마 변경" title="다크모드/라이트모드 전환">
                 <span class="theme-icon">⚙️</span>
             </button>
-            <a class="auth-trigger" id="auth-toggle" href="login.html">로그인</a>
-            <div class="auth-status" id="auth-status" hidden>
-                <span id="auth-display-name"></span>
-                <button class="auth-logout" id="auth-logout" type="button">로그아웃</button>
-            </div>
         </div>
     </header>
+
+    <!-- 데스크탑 왼쪽 사이드 카테고리 -->
+    <nav class="side-nav" aria-label="주요 카테고리">
+        <a href="index.html" class="side-nav__item">매매일지</a>
+        <a href="news.html" class="side-nav__item">뉴스</a>
+        <a href="community.html" class="side-nav__item">커뮤니티</a>
+        <a href="ai-analysis.html" class="side-nav__item">AI 분석</a>
+        <a href="calendar.html" class="side-nav__item">캘린더</a>
+        <a href="me.html" class="side-nav__item">내정보</a>
+    </nav>
 
     <main>
         <section id="trading" class="content-section">
@@ -46,6 +51,7 @@
                     </div>
                     <div class="trading-section-content">
                         <div class="trading-list-scroll" id="today-trading-list"></div>
+                        <button type="button" class="more-btn" data-target="today-trading-list" style="display: none;">더보기</button>
                     </div>
                 </div>
 
@@ -58,26 +64,73 @@
                     </div>
                     <div class="trading-section-content">
                         <div class="trading-list-scroll" id="month-trading-list"></div>
+                        <button type="button" class="more-btn" data-target="month-trading-list" style="display: none;">더보기</button>
                     </div>
                 </div>
 
-                <!-- 두 번째 줄: 오늘 총 수익금 (원형 차트) | 총 매매내역 -->
+                <!-- 두 번째 줄: 총 수익금 | 총 매매내역 -->
                 <div class="trading-section">
                     <div class="trading-section-header">
-                        <h3>오늘 총 수익금</h3>
+                        <h3>총 수익금</h3>
                     </div>
                     <div class="trading-section-content">
-                        <div class="profit-chart-container">
-                            <div class="profit-chart" id="profit-chart">
-                                <svg class="profit-pie-chart" viewBox="0 0 200 200">
-                                    <circle class="profit-pie-bg" cx="100" cy="100" r="80" fill="none" stroke="#e0e0e0" stroke-width="20"></circle>
-                                    <g id="profit-pie-slices"></g>
-                                </svg>
-                                <div class="profit-chart-center">
-                                    <p class="summary-amount" id="today-total-profit">0원</p>
+                        <div class="profit-charts-grid">
+                            <!-- 첫 번째 줄: 오늘, 이번 달 -->
+                            <div class="profit-charts-row">
+                                <!-- 오늘 총 수익금 그래프 -->
+                                <div class="profit-chart-wrapper">
+                                    <div class="profit-chart" id="profit-chart-today">
+                                        <svg class="profit-pie-chart" viewBox="0 0 200 200">
+                                            <circle class="profit-pie-bg" cx="100" cy="100" r="50" fill="none" stroke="#e0e0e0" stroke-width="15"></circle>
+                                            <g id="profit-pie-slices-today"></g>
+                                        </svg>
+                                        <div class="profit-chart-center">
+                                            <div class="profit-center-item">
+                                                <span class="profit-center-label">오늘</span>
+                                                <span class="profit-center-value" id="today-total-profit">0원</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="profit-legend" id="profit-legend-today"></div>
+                                </div>
+                                
+                                <!-- 이번 달 총 수익금 그래프 -->
+                                <div class="profit-chart-wrapper">
+                                    <div class="profit-chart" id="profit-chart-month">
+                                        <svg class="profit-pie-chart" viewBox="0 0 200 200">
+                                            <circle class="profit-pie-bg" cx="100" cy="100" r="50" fill="none" stroke="#e0e0e0" stroke-width="15"></circle>
+                                            <g id="profit-pie-slices-month"></g>
+                                        </svg>
+                                        <div class="profit-chart-center">
+                                            <div class="profit-center-item">
+                                                <span class="profit-center-label">이번 달</span>
+                                                <span class="profit-center-value" id="month-total-profit">0원</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="profit-legend" id="profit-legend-month"></div>
                                 </div>
                             </div>
-                            <div class="profit-legend" id="profit-legend"></div>
+                            
+                            <!-- 두 번째 줄: 전체 -->
+                            <div class="profit-charts-row profit-charts-row-center">
+                                <!-- 전체 총 수익금 그래프 -->
+                                <div class="profit-chart-wrapper">
+                                    <div class="profit-chart" id="profit-chart-all">
+                                        <svg class="profit-pie-chart" viewBox="0 0 200 200">
+                                            <circle class="profit-pie-bg" cx="100" cy="100" r="50" fill="none" stroke="#e0e0e0" stroke-width="15"></circle>
+                                            <g id="profit-pie-slices-all"></g>
+                                        </svg>
+                                        <div class="profit-chart-center">
+                                            <div class="profit-center-item">
+                                                <span class="profit-center-label">전체</span>
+                                                <span class="profit-center-value" id="all-total-profit">0원</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="profit-legend" id="profit-legend-all"></div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -88,6 +141,85 @@
                     </div>
                     <div class="trading-section-content">
                         <div class="trading-list-scroll" id="all-trading-list"></div>
+                        <button type="button" class="more-btn" data-target="all-trading-list" style="display: none;">더보기</button>
+                    </div>
+                </div>
+            </div>
+            <!-- 매매내역 상세 모달 -->
+            <div class="side-modal-overlay" id="trading-detail-modal">
+                <div class="side-modal">
+                    <div class="side-modal-header">
+                        <h3>매매내역 상세</h3>
+                        <button type="button" class="side-modal-close" id="close-trading-detail-modal">&times;</button>
+                    </div>
+                    <div class="side-modal-body" id="trading-detail-content">
+                        <!-- 상세 정보가 여기에 표시됩니다 -->
+                    </div>
+                </div>
+            </div>
+            <!-- 매매내역 수정 모달 -->
+            <div class="side-modal-overlay" id="edit-trading-modal">
+                <div class="side-modal">
+                    <div class="side-modal-header">
+                        <h3>매매내역 수정</h3>
+                        <button type="button" class="side-modal-close" id="close-edit-trading-modal">&times;</button>
+                    </div>
+                    <div class="side-modal-body">
+                        <form class="trading-form" id="edit-trading-form">
+                            <div class="form-row">
+                                <div class="form-field">
+                                    <label for="edit-date">날짜</label>
+                                    <input type="date" id="edit-date" required>
+                                </div>
+                                <div class="form-field">
+                                    <label for="edit-stock">종목명</label>
+                                    <input type="text" id="edit-stock" placeholder="예: AAPL" required>
+                                </div>
+                                <div class="form-field">
+                                    <label for="edit-position">포지션</label>
+                                    <select id="edit-position" required>
+                                        <option value="long">롱</option>
+                                        <option value="short">숏</option>
+                                    </select>
+                                </div>
+                                <div class="form-field">
+                                    <label for="edit-result">승무패</label>
+                                    <select id="edit-result">
+                                        <option value="">선택 안함</option>
+                                        <option value="win">승</option>
+                                        <option value="draw">무</option>
+                                        <option value="loss">패</option>
+                                    </select>
+                                </div>
+                                <div class="form-field">
+                                    <label for="edit-profit">수익금 (원)</label>
+                                    <input type="number" id="edit-profit" placeholder="0" required>
+                                </div>
+                                <div class="form-field form-field-full">
+                                    <label for="edit-chart">차트 이미지</label>
+                                    <div class="image-upload-container">
+                                        <input type="file" id="edit-chart" accept="image/*" class="image-upload-input">
+                                        <label for="edit-chart" class="image-upload-label">
+                                            <span class="upload-text">이미지 선택</span>
+                                        </label>
+                                        <div class="image-preview" id="edit-chart-preview"></div>
+                                        <button type="button" class="image-remove-btn" id="edit-chart-remove" style="display: none;">삭제</button>
+                                    </div>
+                                </div>
+                                <div class="form-field form-field-full">
+                                    <label for="edit-profit-reason">익절한 이유</label>
+                                    <textarea id="edit-profit-reason" placeholder="익절한 이유를 입력하세요" rows="3"></textarea>
+                                </div>
+                                <div class="form-field form-field-full">
+                                    <label for="edit-loss-reason">손절한 이유</label>
+                                    <textarea id="edit-loss-reason" placeholder="손절한 이유를 입력하세요" rows="3"></textarea>
+                                </div>
+                            </div>
+                            <div class="form-actions">
+                                <button type="submit" class="cta-button">수정</button>
+                                <button type="button" class="cancel-btn" id="cancel-edit-trading">취소</button>
+                            </div>
+                        </form>
                     </div>
                 </div>
             </div>
@@ -100,41 +232,17 @@
                 </div>
             </div>
         </section>
-
-        <section id="highlight" class="content-section">
-            <div class="highlight-layout">
-                <article class="highlight-card">
-                    <header>
-                        <h2>오늘의 하이라이트</h2>
-                        <p class="highlight-date" id="highlight-date"></p>
-                    </header>
-                    <p id="highlight-summary" aria-live="polite">시장 데이터를 불러오는 중입니다...</p>
-                    <a href="#news" class="highlight-link">뉴스 피드 살펴보기 →</a>
-                </article>
-            </div>
-        </section>
-
-        <section id="news" class="content-section">
-            <header class="section-header">
-                <h2>뉴스 피드</h2>
-                <p>오늘 시장을 움직인 핵심 헤드라인을 빠르게 모았습니다.</p>
-            </header>
-            <div class="card-grid" id="news-list" aria-live="polite"></div>
-        </section>
-
-        <section id="policies" class="content-section">
-            <header class="section-header">
-                <h2>조항</h2>
-                <p>투자 원칙과 커뮤니티 가이드라인을 꼭 확인하세요.</p>
-            </header>
-            <ol class="policies-list" id="policy-list">
-                <li>모든 정보는 교육 목적으로 제공되며 투자 판단의 최종 책임은 본인에게 있습니다.</li>
-                <li>허위 정보, 타인 비방, 불법 리딩 등은 즉시 제재됩니다.</li>
-                <li>시장 변동성 확대 시 손절 기준과 포지션 사이징을 명확히 설정하세요.</li>
-            </ol>
-        </section>
     </main>
 
+    <!-- 모바일 하단 바 카테고리 -->
+    <nav class="bottom-nav" aria-label="하단 카테고리">
+        <a href="index.html" class="bottom-nav__item">매매일지</a>
+        <a href="news.html" class="bottom-nav__item">뉴스</a>
+        <a href="community.html" class="bottom-nav__item">커뮤니티</a>
+        <a href="ai-analysis.html" class="bottom-nav__item">AI 분석</a>
+        <a href="calendar.html" class="bottom-nav__item">캘린더</a>
+        <a href="me.html" class="bottom-nav__item">내정보</a>
+    </nav>
     <!-- 사이드 패널 모달 -->
     <div class="side-modal-overlay" id="modal-overlay"></div>
     
@@ -180,7 +288,6 @@
                         <div class="image-upload-container">
                             <input type="file" id="today-chart" accept="image/*" class="image-upload-input">
                             <label for="today-chart" class="image-upload-label">
-                                <span class="upload-icon">📷</span>
                                 <span class="upload-text">이미지 선택</span>
                             </label>
                             <div class="image-preview" id="today-chart-preview"></div>
@@ -246,7 +353,6 @@
                         <div class="image-upload-container">
                             <input type="file" id="month-chart" accept="image/*" class="image-upload-input">
                             <label for="month-chart" class="image-upload-label">
-                                <span class="upload-icon">📷</span>
                                 <span class="upload-text">이미지 선택</span>
                             </label>
                             <div class="image-preview" id="month-chart-preview"></div>
@@ -270,19 +376,6 @@
         </div>
     </div>
 
-    
-
-    <footer class="site-footer">
-        <div>
-            <p class="footer-brand">TradeNote</p>
-            <p class="footer-copy">© 2025 TradeNote. All rights reserved.</p>
-        </div>
-        <nav aria-label="하단 메뉴">
-            <a href="#policies">이용 약관</a>
-            <a href="#policies">개인정보 처리방침</a>
-            <a href="#tools">고객 지원</a>
-        </nav>
-    </footer>
 </body>
 </html>
 

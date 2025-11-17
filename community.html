@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeNote | 커뮤니티</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="assets/app.js" defer></script>
+</head>
+<body>
+    <header class="site-header">
+        <a href="index.html" class="brand" style="text-decoration: none; color: inherit;">
+            <span class="brand-mark" aria-hidden="true">📈</span>
+            <div>
+                <p class="brand-name">TradeNote</p>
+                <p class="brand-tagline">쉽고 간단하게</p>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="theme-toggle" id="theme-toggle" type="button" aria-label="테마 변경" title="다크모드/라이트모드 전환">
+                <span class="theme-icon">⚙️</span>
+            </button>
+        </div>
+    </header>
+
+    <nav class="side-nav" aria-label="주요 카테고리">
+        <a href="index.html" class="side-nav__item">매매일지</a>
+        <a href="news.html" class="side-nav__item">뉴스</a>
+        <a href="community.html" class="side-nav__item">커뮤니티</a>
+        <a href="ai-analysis.html" class="side-nav__item">AI 분석</a>
+        <a href="calendar.html" class="side-nav__item">캘린더</a>
+        <a href="me.html" class="side-nav__item">내정보</a>
+    </nav>
+
+    <main>
+        <section id="community" class="content-section" aria-label="커뮤니티">
+            <header class="section-header">
+                <h2>커뮤니티</h2>
+            </header>
+            <nav class="sub-tabs" role="tablist" aria-label="커뮤니티 탭">
+                <a href="#" class="sub-tab active" role="tab" aria-selected="true" data-target="community-free">자유게시판</a>
+                <a href="#" class="sub-tab" role="tab" aria-selected="false" data-target="community-hot">핫이슈</a>
+                <a href="#" class="sub-tab" role="tab" aria-selected="false" data-target="community-notice">공지사항</a>
+            </nav>
+            <div id="community-free" class="sub-tab-panel active" role="tabpanel" aria-labelledby="자유게시판">
+                <div id="free-list" class="trading-list-scroll"></div>
+            </div>
+            <div id="community-hot" class="sub-tab-panel" role="tabpanel" aria-labelledby="핫이슈" hidden>
+                <div id="hot-list" class="trading-list-scroll"></div>
+            </div>
+            <div id="community-notice" class="sub-tab-panel" role="tabpanel" aria-labelledby="공지사항" hidden>
+                <div id="notice-list" class="trading-list-scroll">
+                    <article class="card notice-card">
+                        <h3 style="margin:0 0 0.75rem;font-size:1.1rem;font-weight:600;">안녕하세요 NradeNote에 오신 걸 환영합니다.</h3>
+                        <p style="margin:0;white-space:pre-wrap;line-height:1.6;">NradeNote에서 매매일지와 AI 분석을 통해 승률을 올려보세요.
+건의사항은 dongyeopwoo1@gmail.com로 연락바랍니다.
+감사합니다.</p>
+                    </article>
+                </div>
+            </div>
+            <!-- 로그인 필요 오버레이 (로그인 안 하면 표시) -->
+            <div class="login-block-overlay" id="login-overlay" aria-hidden="true">
+                <div class="login-block-content" role="dialog" aria-labelledby="login-block-title" aria-describedby="login-block-desc">
+                    <h3 id="login-block-title">로그인이 필요합니다</h3>
+                    <p id="login-block-desc">커뮤니티를 이용하려면 로그인해주세요.</p>
+                    <a href="login.html" class="login-block-button" aria-label="로그인 페이지로 이동">로그인</a>
+                </div>
+            </div>
+        </section>
+    </main>
+    <!-- 모달 오버레이 (필수) -->
+    <div class="side-modal-overlay" id="modal-overlay"></div>
+    <!-- 커뮤니티 글쓰기 FAB -->
+    <button id="fab-compose" class="fab" type="button" aria-label="새 글 쓰기" data-modal="community-compose-modal">+</button>
+
+    <!-- 커뮤니티 글쓰기 사이드 모달 -->
+    <div class="side-modal" id="community-compose-modal" aria-labelledby="compose-title" aria-modal="true" role="dialog">
+        <div class="side-modal-header">
+            <h2 id="compose-title">게시글 작성</h2>
+            <button type="button" class="side-modal-close" data-modal="community-compose-modal" aria-label="닫기">×</button>
+        </div>
+        <div class="side-modal-body">
+            <form class="trading-form" id="community-compose-form">
+                <div class="form-row">
+                    <div class="form-field form-field-full">
+                        <label for="compose-category">카테고리</label>
+                        <select id="compose-category" required>
+                            <option value="free">자유게시판</option>
+                            <option value="hot">핫이슈</option>
+                        </select>
+                    </div>
+                    <div class="form-field">
+                        <label for="compose-stock">주식명</label>
+                        <input type="text" id="compose-stock" placeholder="예: AAPL" />
+                    </div>
+                    <div class="form-field form-field-full">
+                        <label for="compose-title-input">제목</label>
+                        <input type="text" id="compose-title-input" placeholder="제목 입력란" required />
+                    </div>
+                    <div class="form-field form-field-full">
+                        <label for="compose-content">내용</label>
+                        <textarea id="compose-content" placeholder="내용 입력란" rows="8" required></textarea>
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="cta-button">글쓰기</button>
+                    <button type="button" class="cancel-btn" data-modal="community-compose-modal">취소</button>
+                </div>
+            </form>
+</div>
+    </div>
+    <!-- 글 상세 모달 -->
+    <div class="side-modal" id="community-detail-modal" aria-modal="true" role="dialog">
+        <div class="side-modal-header">
+            <h2 id="detail-title">게시글</h2>
+            <button type="button" class="side-modal-close" data-modal="community-detail-modal" aria-label="닫기">×</button>
+        </div>
+        <div class="side-modal-body">
+            <article class="card" id="detail-body" style="margin-bottom:1rem;"></article>
+            <section class="card">
+                <h3 style="margin-top:0;">댓글</h3>
+                <div id="detail-comments" class="trading-list-scroll" style="max-height:220px;"></div>
+                <form id="comment-form" style="margin-top:0.75rem;">
+                    <div class="form-field form-field-full" style="position: relative;">
+                        <label for="comment-input">댓글 작성</label>
+                        <textarea id="comment-input" rows="3" placeholder="내용 입력 (예: @작성자명)" required></textarea>
+                        <div id="mention-dropdown" class="mention-dropdown" style="display: none;"></div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="cta-button">등록</button>
+                        <button type="button" class="cancel-btn" data-modal="community-detail-modal">닫기</button>
+                    </div>
+                </form>
+            </section>
+        </div>
+    </div>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    // app.js가 로드될 때까지 대기
+    let retries = 0;
+    while (typeof window.initAuth !== "function" && retries < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retries++;
+    }
+    
+    // 인증 초기화
+    if (typeof window.initAuth === "function") {
+        await window.initAuth();
+    }
+    
+    const tabs = document.querySelectorAll(".sub-tab");
+    const panels = document.querySelectorAll(".sub-tab-panel");
+    tabs.forEach(tab => {
+        tab.addEventListener("click", (e) => {
+            e.preventDefault();
+            const targetId = tab.getAttribute("data-target");
+            tabs.forEach(t => t.classList.remove("active"));
+            tab.classList.add("active");
+            panels.forEach(p => {
+                const isActive = p.id === targetId;
+                p.classList.toggle("active", isActive);
+                p.hidden = !isActive;
+            });
+        });
+    });
+    // FAB 클릭: 로그인 가드 후 작성 모달 열기
+    const fab = document.getElementById("fab-compose");
+    if (fab) {
+        fab.addEventListener("click", () => {
+            if (typeof guardTradingAccess === "function" && !guardTradingAccess()) return;
+            const modalId = fab.getAttribute("data-modal");
+            if (typeof openSideModal === "function" && modalId) {
+                openSideModal(modalId);
+            }
+        });
+    }
+    // 작성 폼 제출(임시): 유효성 검사 후 닫기
+    const form = document.getElementById("community-compose-form");
+    if (form) {
+        form.addEventListener("submit", (e) => {
+            e.preventDefault();
+            if (typeof guardTradingAccess === "function" && !guardTradingAccess()) return;
+            const category = document.getElementById("compose-category").value;
+            const stock = document.getElementById("compose-stock").value.trim();
+            const title = document.getElementById("compose-title-input").value.trim();
+            const content = document.getElementById("compose-content").value.trim();
+            if (!title || !content) {
+                alert("제목과 내용을 입력해주세요.");
+                return;
+            }
+            const submitBtn = form.querySelector(".cta-button");
+            if (submitBtn) submitBtn.disabled = true;
+            // API 연결
+            if (typeof requestJSON === "function") {
+                requestJSON(`${AUTH_API_BASE}/api/community/posts`, {
+                    method: "POST",
+                    body: JSON.stringify({ category, stock, title, content })
+                })
+                .then((post) => {
+                    alert("게시글이 등록되었습니다.");
+                    const item = {
+                        id: post?.id,
+                        category,
+                        stock,
+                        title,
+                        authorNickname: (authState?.user?.displayName) || "나",
+                        createdAt: new Date().toISOString(),
+                        commentCount: 0
+                    };
+                    prependPostToList(category, item);
+                    form.reset();
+                    if (typeof closeSideModal === "function") {
+                        closeSideModal("community-compose-modal");
+                    }
+                })
+                .catch((err) => {
+                    alert(err?.message || "게시글 등록에 실패했습니다.");
+                })
+                .finally(() => {
+                    if (submitBtn) submitBtn.disabled = false;
+                });
+            } else {
+                alert("요청 함수를 찾지 못했습니다.");
+            }
+        });
+    }
+    // 초기 목록 로드
+    refreshList("free");
+    refreshList("hot");
+
+    function refreshList(category) {
+        fetch(`${AUTH_API_BASE}/api/community/posts?category=${encodeURIComponent(category)}&page=0&size=20`, { credentials: "include" })
+            .then(res => res.json())
+            .then(data => {
+                const items = data?.content || [];
+                renderList(category, items);
+            })
+            .catch(() => {
+                renderList(category, []);
+            });
+    }
+
+    function renderList(category, items) {
+        const containerId = category === "hot" ? "hot-list" : "free-list";
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        container.innerHTML = "";
+        
+        // 공지사항 카드 추가 (모든 탭에 표시)
+        const noticeCard = document.createElement("article");
+        noticeCard.className = "card notice-card";
+        noticeCard.innerHTML = `
+            <h3 style="margin:0 0 0.75rem;font-size:1.1rem;font-weight:600;">안녕하세요 NradeNote에 오신 걸 환영합니다.</h3>
+            <p style="margin:0;white-space:pre-wrap;line-height:1.6;">NradeNote에서 매매일지와 AI 분석을 통해 승률을 올려보세요.
+건의사항은 dongyeopwoo1@gmail.com로 연락바랍니다.
+감사합니다.</p>
+        `;
+        container.appendChild(noticeCard);
+        
+        if (!items.length) {
+            const empty = document.createElement("div");
+            empty.className = "empty-trading-list";
+            empty.textContent = "게시글이 없습니다.";
+            container.appendChild(empty);
+            return;
+        }
+        items.forEach(post => {
+            container.appendChild(renderPostCard(post));
+        });
+    }
+
+    function renderPostCard(post) {
+        const card = document.createElement("article");
+        card.className = "card post-card-clickable";
+        card.style.cursor = "pointer";
+        const meta = new Date(post.createdAt || Date.now()).toLocaleString("ko-KR", { hour12: false });
+        const postId = post.id;
+        card.innerHTML = `
+            <header style="display:flex;justify-content:space-between;align-items:center;">
+                <strong>${escapeHtml(post.title)}</strong>
+                <span class="badge">${post.commentCount ?? 0} 댓글</span>
+            </header>
+            <p style="margin:0.25rem 0 0.5rem;color:var(--text-muted);">
+                ${escapeHtml(post.authorNickname || "-")} · ${meta} ${post.stock ? `· ${escapeHtml(post.stock)}` : ""}
+            </p>
+            <div class="vote-row" data-id="${postId}" data-stop-propagation>
+                <button type="button" class="vote-btn ${post.userVote === 'up' ? 'vote-btn-active' : ''}" data-type="up" ${post.userVote === 'up' ? 'disabled' : ''}>추천 ▲ <span class="vote-count" data-role="up">${post.upVotes ?? 0}</span></button>
+                <button type="button" class="vote-btn ${post.userVote === 'down' ? 'vote-btn-active' : ''}" data-type="down" ${post.userVote === 'down' ? 'disabled' : ''}>비추천 ▼ <span class="vote-count" data-role="down">${post.downVotes ?? 0}</span></button>
+            </div>
+        `;
+        
+        // 카드 전체 클릭 시 상세 모달 열기
+        card.addEventListener("click", (ev) => {
+            // vote-row나 그 자식 요소를 클릭한 경우는 상세 모달을 열지 않음
+            if (ev.target.closest(".vote-row")) {
+                return;
+            }
+            openDetail(postId);
+        });
+        
+        // 투표 버튼 클릭 이벤트
+        const votes = card.querySelector(".vote-row");
+        if (votes) {
+            votes.addEventListener("click", (ev) => {
+                ev.stopPropagation(); // 카드 클릭 이벤트 전파 방지
+                const target = ev.target;
+                if (!(target instanceof HTMLElement)) return;
+                if (target.classList.contains("vote-btn") && target.dataset.type && !target.disabled) {
+                    const type = target.dataset.type;
+                    requestJSON(`${AUTH_API_BASE}/api/community/posts/${postId}/vote?type=${encodeURIComponent(type)}`, {
+                        method: "POST"
+                    })
+                    .then((res) => {
+                        const upBtn = votes.querySelector('.vote-btn[data-type="up"]');
+                        const downBtn = votes.querySelector('.vote-btn[data-type="down"]');
+                        const upEl = votes.querySelector('.vote-btn[data-type="up"] .vote-count[data-role="up"]');
+                        const downEl = votes.querySelector('.vote-btn[data-type="down"] .vote-count[data-role="down"]');
+                        if (upEl) upEl.textContent = String(res.upVotes ?? 0);
+                        if (downEl) downEl.textContent = String(res.downVotes ?? 0);
+                        
+                        // 투표 상태 업데이트 (같은 투표면 비활성화, 다른 투표면 활성화)
+                        if (res.userVote === 'up') {
+                            if (upBtn) { 
+                                upBtn.classList.add('vote-btn-active'); 
+                                upBtn.disabled = true; 
+                            }
+                            if (downBtn) { 
+                                downBtn.classList.remove('vote-btn-active'); 
+                                downBtn.disabled = false; 
+                            }
+                        } else if (res.userVote === 'down') {
+                            if (downBtn) { 
+                                downBtn.classList.add('vote-btn-active'); 
+                                downBtn.disabled = true; 
+                            }
+                            if (upBtn) { 
+                                upBtn.classList.remove('vote-btn-active'); 
+                                upBtn.disabled = false; 
+                            }
+                        } else {
+                            // 투표 취소된 경우
+                            if (upBtn) { upBtn.classList.remove('vote-btn-active'); upBtn.disabled = false; }
+                            if (downBtn) { downBtn.classList.remove('vote-btn-active'); downBtn.disabled = false; }
+                        }
+                    })
+                    .catch((err) => {
+                        const msg = err?.message || "투표에 실패했습니다.";
+                        if (msg.includes("이미 투표")) {
+                            alert("이미 투표하셨습니다. 다른 투표로 변경할 수 있습니다.");
+                        } else {
+                            alert(msg);
+                        }
+                    });
+                }
+            });
+        }
+        return card;
+    }
+
+    function prependPostToList(category, post) {
+        const containerId = category === "hot" ? "hot-list" : "free-list";
+        const container = document.getElementById(containerId);
+        if (!container) return;
+        const empty = container.querySelector(".empty-trading-list");
+        if (empty) empty.remove();
+        
+        // 공지사항 카드가 없으면 추가
+        let noticeCard = container.querySelector(".notice-card");
+        if (!noticeCard) {
+            noticeCard = document.createElement("article");
+            noticeCard.className = "card notice-card";
+            noticeCard.innerHTML = `
+                <h3 style="margin:0 0 0.75rem;font-size:1.1rem;font-weight:600;">안녕하세요 NradeNote에 오신 걸 환영합니다.</h3>
+                <p style="margin:0;white-space:pre-wrap;line-height:1.6;">NradeNote에서 매매일지와 AI 분석을 통해 승률을 올려보세요.
+건의사항은 dongyeopwoo1@gmail.com로 연락바랍니다.
+감사합니다.</p>
+            `;
+            container.insertBefore(noticeCard, container.firstChild);
+        }
+        
+        // 공지사항 다음에 새 게시글 추가
+        const postCard = renderPostCard(post);
+        if (noticeCard.nextSibling) {
+            container.insertBefore(postCard, noticeCard.nextSibling);
+        } else {
+            container.appendChild(postCard);
+        }
+    }
+
+    function openDetail(postId) {
+        fetch(`${AUTH_API_BASE}/api/community/posts/${postId}`, { credentials: "include" })
+            .then(res => res.json())
+            .then(data => {
+                const titleEl = document.getElementById("detail-title");
+                const bodyEl = document.getElementById("detail-body");
+                const commentsEl = document.getElementById("detail-comments");
+                if (titleEl) titleEl.textContent = data.title || "게시글";
+                if (bodyEl) {
+                    bodyEl.innerHTML = `
+                        <p style="margin:0 0 0.5rem;color:var(--text-muted);">
+                            ${escapeHtml(data.authorNickname || "-")} · ${new Date(data.createdAt || Date.now()).toLocaleString("ko-KR", { hour12:false })} ${data.stock ? `· ${escapeHtml(data.stock)}` : ""}
+                        </p>
+                        <h3 style="margin:0.25rem 0 0.75rem;">${escapeHtml(data.title || "")}</h3>
+                        <p style="white-space:pre-wrap;">${escapeHtml(data.content || "")}</p>
+                    `;
+                }
+                if (commentsEl) {
+                    commentsEl.innerHTML = "";
+                    const list = data.comments || [];
+                    if (!list.length) {
+                        const empty = document.createElement("div");
+                        empty.className = "empty-trading-list";
+                        empty.textContent = "댓글이 없습니다.";
+                        commentsEl.appendChild(empty);
+                    } else {
+                        // 현재 사용자 ID 가져오기 (authState.user.id 또는 username으로 비교)
+                        const currentUserId = (authState?.user?.id) || null;
+                        const currentUsername = (authState?.user?.username) || (authState?.user?.displayName) || null;
+                        list.forEach(c => {
+                            const isEdited = c.updatedAt && new Date(c.updatedAt).getTime() > new Date(c.createdAt).getTime() + 1000;
+                            // 작성자 ID 또는 닉네임으로 비교
+                            const isMyComment = (currentUserId && c.authorId && c.authorId === currentUserId) || 
+                                                (currentUsername && c.authorNickname && c.authorNickname === currentUsername);
+                            const item = document.createElement("div");
+                            item.className = "comment-item";
+                            item.innerHTML = `
+                                <div class="comment-content">
+                                    <span class="comment-author">${escapeHtml(c.authorNickname)}</span>
+                                    <span class="comment-text">${formatCommentWithMentions(c.content)}</span>
+                                    ${isEdited ? '<span class="comment-edited">(수정됨)</span>' : ''}
+                                    <span class="comment-date">${new Date(c.createdAt).toLocaleString("ko-KR", { hour12:false, month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                </div>
+                                <div class="comment-actions-row">
+                                    <div class="comment-vote-row" data-comment-id="${c.id}">
+                                        <button type="button" class="vote-btn vote-btn-small ${c.userVote === 'up' ? 'vote-btn-active' : ''}" data-type="up" ${c.userVote === 'up' ? 'disabled' : ''}>▲ <span class="vote-count" data-role="up">${c.upVotes ?? 0}</span></button>
+                                        <button type="button" class="vote-btn vote-btn-small ${c.userVote === 'down' ? 'vote-btn-active' : ''}" data-type="down" ${c.userVote === 'down' ? 'disabled' : ''}>▼ <span class="vote-count" data-role="down">${c.downVotes ?? 0}</span></button>
+                                    </div>
+                                    ${isMyComment ? `
+                                        <div class="comment-edit-actions">
+                                            <button type="button" class="comment-edit-btn" data-comment-id="${c.id}" data-comment-content="${escapeHtml(c.content)}">수정</button>
+                                            <button type="button" class="comment-delete-btn" data-comment-id="${c.id}">삭제</button>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `;
+                            const voteRow = item.querySelector(".comment-vote-row");
+                            if (voteRow) {
+                                voteRow.addEventListener("click", (e) => {
+                                    const t = e.target;
+                                    if (!(t instanceof HTMLElement)) return;
+                                    if (t.classList.contains("vote-btn") && t.dataset.type && !t.disabled) {
+                                        const type = t.dataset.type;
+                                        const cid = voteRow.getAttribute("data-comment-id");
+                                        requestJSON(`${AUTH_API_BASE}/api/community/comments/${cid}/vote?type=${encodeURIComponent(type)}`, {
+                                            method: "POST"
+                                        }).then(() => {
+                                            // 간단히 증가 반영: 상세를 다시 로드하여 정확히 반영
+                                            openDetail(postId);
+                                        }).catch((err) => {
+                                            const msg = err?.message || "투표 실패";
+                                            if (msg.includes("이미 투표")) {
+                                                alert("이미 투표하셨습니다. 다른 투표로 변경할 수 있습니다.");
+                                            } else {
+                                                alert(msg);
+                                            }
+                                        });
+                                    }
+                                });
+                            }
+                            
+                            // 수정 버튼 이벤트
+                            const editBtn = item.querySelector(".comment-edit-btn");
+                            if (editBtn) {
+                                editBtn.addEventListener("click", (e) => {
+                                    e.stopPropagation();
+                                    const commentId = editBtn.getAttribute("data-comment-id");
+                                    const currentContent = editBtn.getAttribute("data-comment-content");
+                                    openCommentEditModal(commentId, currentContent, postId);
+                                });
+                            }
+                            
+                            // 삭제 버튼 이벤트
+                            const deleteBtn = item.querySelector(".comment-delete-btn");
+                            if (deleteBtn) {
+                                deleteBtn.addEventListener("click", (e) => {
+                                    e.stopPropagation();
+                                    if (!confirm("댓글을 삭제하시겠습니까?")) return;
+                                    const commentId = deleteBtn.getAttribute("data-comment-id");
+                                    requestJSON(`${AUTH_API_BASE}/api/community/comments/${commentId}`, {
+                                        method: "DELETE"
+                                    }).then(() => {
+                                        openDetail(postId);
+                                    }).catch(err => alert(err?.message || "댓글 삭제에 실패했습니다."));
+                                });
+                            }
+                            
+                            commentsEl.appendChild(item);
+                        });
+                    }
+                }
+                const form = document.getElementById("comment-form");
+                const commentInput = document.getElementById("comment-input");
+                const mentionDropdown = document.getElementById("mention-dropdown");
+                let availableAuthors = [];
+                
+                // 댓글 작성자 목록 수집
+                if (data.comments && data.comments.length > 0) {
+                    availableAuthors = [...new Set(data.comments.map(c => c.authorNickname).filter(Boolean))];
+                    // 게시글 작성자도 추가
+                    if (data.authorNickname) {
+                        availableAuthors.push(data.authorNickname);
+                    }
+                    availableAuthors = [...new Set(availableAuthors)];
+                } else if (data.authorNickname) {
+                    availableAuthors = [data.authorNickname];
+                }
+                
+                if (form && commentInput) {
+                    // @ 입력 감지 및 자동완성
+                    commentInput.addEventListener("input", (e) => {
+                        const text = e.target.value;
+                        const cursorPos = e.target.selectionStart;
+                        const textBeforeCursor = text.substring(0, cursorPos);
+                        const lastAtIndex = textBeforeCursor.lastIndexOf("@");
+                        
+                        if (lastAtIndex !== -1) {
+                            const textAfterAt = textBeforeCursor.substring(lastAtIndex + 1);
+                            // 공백이나 줄바꿈이 없으면 멘션 검색
+                            if (!textAfterAt.match(/[\s\n]/)) {
+                                const searchTerm = textAfterAt.toLowerCase();
+                                const matches = availableAuthors.filter(author => 
+                                    author.toLowerCase().startsWith(searchTerm)
+                                );
+                                
+                                if (matches.length > 0) {
+                                    showMentionDropdown(matches, lastAtIndex, commentInput, mentionDropdown);
+                                } else {
+                                    hideMentionDropdown(mentionDropdown);
+                                }
+                            } else {
+                                hideMentionDropdown(mentionDropdown);
+                            }
+                        } else {
+                            hideMentionDropdown(mentionDropdown);
+                        }
+                    });
+                    
+                    // 키보드 이벤트 (Enter로 선택, Escape로 닫기)
+                    commentInput.addEventListener("keydown", (e) => {
+                        if (mentionDropdown.style.display !== "none") {
+                            const selected = mentionDropdown.querySelector(".mention-item.selected");
+                            const items = mentionDropdown.querySelectorAll(".mention-item");
+                            
+                            if (e.key === "ArrowDown") {
+                                e.preventDefault();
+                                if (selected) {
+                                    selected.classList.remove("selected");
+                                    const next = selected.nextElementSibling || items[0];
+                                    if (next) next.classList.add("selected");
+                                } else if (items[0]) {
+                                    items[0].classList.add("selected");
+                                }
+                            } else if (e.key === "ArrowUp") {
+                                e.preventDefault();
+                                if (selected) {
+                                    selected.classList.remove("selected");
+                                    const prev = selected.previousElementSibling || items[items.length - 1];
+                                    if (prev) prev.classList.add("selected");
+                                } else if (items[items.length - 1]) {
+                                    items[items.length - 1].classList.add("selected");
+                                }
+                            } else if (e.key === "Enter" && selected) {
+                                e.preventDefault();
+                                selected.click();
+                            } else if (e.key === "Escape") {
+                                hideMentionDropdown(mentionDropdown);
+                            }
+                        }
+                    });
+                    
+                    form.onsubmit = (ev) => {
+                        ev.preventDefault();
+                        if (typeof guardTradingAccess === "function" && !guardTradingAccess()) return;
+                        const text = (commentInput?.value || "").trim();
+                        if (!text) return;
+                        const btn = form.querySelector(".cta-button");
+                        if (btn) btn.disabled = true;
+                        hideMentionDropdown(mentionDropdown);
+                        requestJSON(`${AUTH_API_BASE}/api/community/posts/${postId}/comments`, {
+                            method: "POST",
+                            body: JSON.stringify({ content: text })
+                        })
+                        .then(() => {
+                            commentInput.value = "";
+                            openDetail(postId);
+                        })
+                        .catch(err => alert(err?.message || "댓글 등록 실패"))
+                        .finally(() => { if (btn) btn.disabled = false; });
+                    };
+                }
+                if (typeof openSideModal === "function") openSideModal("community-detail-modal");
+            })
+            .catch(() => alert("게시글을 불러오지 못했습니다."));
+    }
+
+    function escapeHtml(str) {
+        return String(str ?? "").replace(/[&<>\\\"]/g, s => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\\\"":"&quot;" }[s]));
+    }
+    
+    function formatCommentWithMentions(content) {
+        if (!content) return "";
+        // @작성자명 형식을 찾아서 하이라이트 (한글, 영문, 숫자, 언더스코어 지원)
+        const escaped = escapeHtml(content);
+        return escaped.replace(/@([\w가-힣]+)/g, '<span class="mention-tag">@$1</span>');
+    }
+    
+    function openCommentEditModal(commentId, currentContent, postId) {
+        const newContent = prompt("댓글을 수정하세요:", currentContent);
+        if (newContent === null || newContent.trim() === currentContent.trim()) return;
+        if (!newContent.trim()) {
+            alert("댓글 내용을 입력해주세요.");
+            return;
+        }
+        requestJSON(`${AUTH_API_BASE}/api/community/comments/${commentId}`, {
+            method: "PUT",
+            body: JSON.stringify({ content: newContent.trim() })
+        }).then(() => {
+            openDetail(postId);
+        }).catch(err => alert(err?.message || "댓글 수정에 실패했습니다."));
+    }
+    
+    function showMentionDropdown(matches, atIndex, textarea, dropdown) {
+        dropdown.innerHTML = matches.map((author, idx) => 
+            `<div class="mention-item ${idx === 0 ? 'selected' : ''}" data-author="${escapeHtml(author)}">@${escapeHtml(author)}</div>`
+        ).join("");
+        dropdown.style.display = "block";
+        
+        // 클릭 이벤트
+        dropdown.querySelectorAll(".mention-item").forEach(item => {
+            item.addEventListener("click", () => {
+                const author = item.getAttribute("data-author");
+                const text = textarea.value;
+                const cursorPos = textarea.selectionStart;
+                const textBeforeCursor = text.substring(0, cursorPos);
+                const lastAtIndex = textBeforeCursor.lastIndexOf("@");
+                const textAfterCursor = text.substring(cursorPos);
+                
+                const newText = text.substring(0, lastAtIndex) + `@${author} ` + textAfterCursor;
+                textarea.value = newText;
+                const newCursorPos = lastAtIndex + author.length + 2;
+                textarea.setSelectionRange(newCursorPos, newCursorPos);
+                textarea.focus();
+                hideMentionDropdown(dropdown);
+            });
+        });
+    }
+    
+    function hideMentionDropdown(dropdown) {
+        if (dropdown) {
+            dropdown.style.display = "none";
+            dropdown.innerHTML = "";
+        }
+    }
+});
+</script>
+
+    <nav class="bottom-nav" aria-label="하단 카테고리">
+        <a href="index.html" class="bottom-nav__item">매매일지</a>
+        <a href="news.html" class="bottom-nav__item">뉴스</a>
+        <a href="community.html" class="bottom-nav__item">커뮤니티</a>
+        <a href="ai-analysis.html" class="bottom-nav__item">AI 분석</a>
+        <a href="calendar.html" class="bottom-nav__item">캘린더</a>
+        <a href="me.html" class="bottom-nav__item">내정보</a>
+    </nav>
+</body>
+</html>
+
+

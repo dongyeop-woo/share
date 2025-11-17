@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeNote | AI 분석</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="assets/app.js" defer></script>
+</head>
+<body>
+    <header class="site-header">
+        <a href="index.html" class="brand" style="text-decoration: none; color: inherit;">
+            <span class="brand-mark" aria-hidden="true">📈</span>
+            <div>
+                <p class="brand-name">TradeNote</p>
+                <p class="brand-tagline">쉽고 간단하게</p>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="theme-toggle" id="theme-toggle" type="button" aria-label="테마 변경" title="다크모드/라이트모드 전환">
+                <span class="theme-icon">⚙️</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- 데스크탑 왼쪽 사이드 카테고리 -->
+    <nav class="side-nav" aria-label="주요 카테고리">
+        <a href="index.html" class="side-nav__item">매매일지</a>
+        <a href="news.html" class="side-nav__item">뉴스</a>
+        <a href="community.html" class="side-nav__item">커뮤니티</a>
+        <a href="ai-analysis.html" class="side-nav__item active">AI 분석</a>
+        <a href="calendar.html" class="side-nav__item">캘린더</a>
+        <a href="me.html" class="side-nav__item">내정보</a>
+    </nav>
+
+    <main>
+        <section id="ai-analysis" class="content-section">
+            <header class="section-header">
+                <h2>AI 분석</h2>
+                <p>당신의 매매 패턴을 AI가 분석하여 인사이트를 제공합니다.</p>
+            </header>
+
+            <!-- 로그인 필요 오버레이 -->
+            <div class="login-block-overlay" id="login-overlay" aria-hidden="true">
+                <div class="login-block-content" role="dialog" aria-labelledby="login-block-title" aria-describedby="login-block-desc">
+                    <h3 id="login-block-title">로그인이 필요합니다</h3>
+                    <p id="login-block-desc">AI 분석을 보려면 로그인해주세요.</p>
+                    <a href="login.html" class="login-block-button" aria-label="로그인 페이지로 이동">로그인</a>
+                </div>
+            </div>
+
+            <div id="ai-analysis-content" style="display: none;">
+                <!-- 분석 선택 버튼 -->
+                <div id="analysis-selection" class="analysis-selection">
+                    <button type="button" class="analysis-btn" id="loss-analysis-btn">
+                        <span class="analysis-btn-text">손절 시 반복되는 문제점 찾기</span>
+                    </button>
+                    <button type="button" class="analysis-btn" id="profit-analysis-btn">
+                        <span class="analysis-btn-text">익절 시 반복되는 좋은 습관 찾기</span>
+                    </button>
+                </div>
+
+                <!-- 손절 문제점 분석 결과 -->
+                <div id="loss-analysis-content" class="analysis-result" style="display: none;">
+                    <button type="button" class="back-btn" id="back-from-loss">← 뒤로가기</button>
+                    <div class="card-grid">
+                        <div class="card">
+                            <h3>손절 시 반복되는 문제점</h3>
+                            <div id="loss-analysis-detail">
+                                <p>분석을 시작하려면 버튼을 클릭하세요.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 익절 습관 분석 결과 -->
+                <div id="profit-analysis-content" class="analysis-result" style="display: none;">
+                    <button type="button" class="back-btn" id="back-from-profit">← 뒤로가기</button>
+                    <div class="card-grid">
+                        <div class="card">
+                            <h3>익절 시 반복되는 좋은 습관</h3>
+                            <div id="profit-analysis-detail">
+                                <p>분석을 시작하려면 버튼을 클릭하세요.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 모바일 하단 바 카테고리 -->
+    <nav class="bottom-nav" aria-label="하단 카테고리">
+        <a href="index.html" class="bottom-nav__item">매매일지</a>
+        <a href="news.html" class="bottom-nav__item">뉴스</a>
+        <a href="community.html" class="bottom-nav__item">커뮤니티</a>
+        <a href="ai-analysis.html" class="bottom-nav__item active">AI 분석</a>
+        <a href="calendar.html" class="bottom-nav__item">캘린더</a>
+        <a href="me.html" class="bottom-nav__item">내정보</a>
+    </nav>
+</body>
+</html>
+

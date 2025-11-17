@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeNote | 내정보</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="assets/app.js" defer></script>
+</head>
+<body>
+    <header class="site-header">
+        <a href="index.html" class="brand" style="text-decoration: none; color: inherit;">
+            <span class="brand-mark" aria-hidden="true">📈</span>
+            <div>
+                <p class="brand-name">TradeNote</p>
+                <p class="brand-tagline">쉽고 간단하게</p>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="theme-toggle" id="theme-toggle" type="button" aria-label="테마 변경" title="다크모드/라이트모드 전환">
+                <span class="theme-icon">⚙️</span>
+            </button>
+        </div>
+    </header>
+
+    <nav class="side-nav" aria-label="주요 카테고리">
+        <a href="index.html" class="side-nav__item">매매일지</a>
+        <a href="news.html" class="side-nav__item">뉴스</a>
+        <a href="community.html" class="side-nav__item">커뮤니티</a>
+        <a href="ai-analysis.html" class="side-nav__item">AI 분석</a>
+        <a href="calendar.html" class="side-nav__item">캘린더</a>
+        <a href="me.html" class="side-nav__item">내정보</a>
+    </nav>
+
+    <main>
+        <section id="me" class="content-section" aria-label="내정보">
+            <header class="section-header">
+                <h2>내 정보</h2>
+                <p>프로필과 활동 기록을 확인하세요.</p>
+            </header>
+
+            <!-- 프로필 헤더 -->
+            <div class="profile-header">
+                <div class="profile-avatar-circle">
+                    <span class="profile-avatar-initial" id="profile-avatar-initial">-</span>
+                </div>
+                <h3 class="profile-name" id="profile-nickname">-</h3>
+            </div>
+
+            <!-- 통계 카드 -->
+            <div class="profile-stats-grid">
+                <div class="profile-stat-card profile-clickable" id="profile-posts-clickable">
+                    <div class="profile-stat-content">
+                        <div class="profile-stat-value" id="profile-posts-count">0</div>
+                        <div class="profile-stat-label">작성한 글</div>
+                    </div>
+                </div>
+                <div class="profile-stat-card profile-clickable" id="profile-comments-clickable">
+                    <div class="profile-stat-content">
+                        <div class="profile-stat-value" id="profile-comments-count">0</div>
+                        <div class="profile-stat-label">댓글 단 글</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 메뉴 카드 -->
+            <div class="profile-menu-card">
+                <h3 class="profile-menu-title">설정</h3>
+                <div class="profile-menu-list">
+                    <!-- 로그인 UI (로그인 안 되어 있을 때만 표시) -->
+                    <div class="profile-auth-section" id="profile-auth-section">
+                        <a class="profile-auth-trigger" id="profile-auth-toggle" href="login.html">로그인</a>
+                    </div>
+                    <button type="button" class="profile-menu-item" id="btn-edit-profile">
+                        <span class="profile-menu-text">회원정보 수정</span>
+                        <span class="profile-menu-arrow">›</span>
+                    </button>
+                    <div class="profile-menu-item profile-menu-item-email">
+                        <span class="profile-menu-text">문의하기</span>
+                        <a href="mailto:dongyeopwoo1@gmail.com" class="profile-email">dongyeopwoo1@gmail.com</a>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 로그아웃 및 회원탈퇴 버튼 (로그인되어 있을 때만 표시) -->
+            <div class="profile-actions" id="profile-actions" hidden>
+                <button type="button" class="profile-logout-btn" id="profile-auth-logout">로그아웃</button>
+                <button type="button" class="profile-delete-btn" id="profile-delete-account">회원탈퇴</button>
+            </div>
+
+            <!-- 회원정보 수정 모달 -->
+            <div class="side-modal-overlay" id="edit-profile-modal" style="display: none;">
+                <div class="side-modal">
+                    <div class="side-modal-header">
+                        <h3>회원정보 수정</h3>
+                        <button type="button" class="side-modal-close" id="close-edit-profile-modal">×</button>
+                    </div>
+                    <div class="side-modal-body">
+                        <div class="profile-edit-menu">
+                            <button type="button" class="profile-edit-item" id="btn-change-password">
+                                <span class="profile-edit-text">비밀번호 변경</span>
+                                <span class="profile-edit-arrow">›</span>
+                            </button>
+                            <button type="button" class="profile-edit-item" id="btn-change-nickname">
+                                <span class="profile-edit-text">닉네임 변경</span>
+                                <span class="profile-edit-arrow">›</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 비밀번호 변경 모달 -->
+            <div class="side-modal-overlay" id="change-password-modal" style="display: none;">
+                <div class="side-modal">
+                    <div class="side-modal-header">
+                        <h3>비밀번호 변경</h3>
+                        <button type="button" class="side-modal-close" id="close-change-password-modal">×</button>
+                    </div>
+                    <div class="side-modal-body">
+                        <form class="auth-form" id="change-password-form" novalidate>
+                            <div class="auth-field">
+                                <label for="current-password">현재 비밀번호</label>
+                                <input id="current-password" name="currentPassword" type="password" autocomplete="current-password" placeholder="현재 비밀번호를 입력하세요" required>
+                            </div>
+                            <div class="auth-field">
+                                <label for="new-password">새 비밀번호</label>
+                                <input id="new-password" name="newPassword" type="password" autocomplete="new-password" placeholder="새 비밀번호를 입력하세요" required minlength="8" maxlength="64">
+                            </div>
+                            <div class="auth-field">
+                                <label for="confirm-password">새 비밀번호 확인</label>
+                                <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" placeholder="새 비밀번호를 다시 입력하세요" required minlength="8" maxlength="64">
+                            </div>
+                            <button class="cta-button full-width" id="change-password-submit" type="submit">비밀번호 변경</button>
+                            <p class="auth-message" id="change-password-message" role="status" aria-live="polite"></p>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 닉네임 변경 모달 -->
+            <div class="side-modal-overlay" id="change-nickname-modal" style="display: none;">
+                <div class="side-modal">
+                    <div class="side-modal-header">
+                        <h3>닉네임 변경</h3>
+                        <button type="button" class="side-modal-close" id="close-change-nickname-modal">×</button>
+                    </div>
+                    <div class="side-modal-body">
+                        <form class="auth-form" id="change-nickname-form" novalidate>
+                            <div class="auth-field">
+                                <label for="new-display-name">새 닉네임</label>
+                                <input id="new-display-name" name="displayName" type="text" autocomplete="nickname" placeholder="새 닉네임을 입력하세요" required minlength="1" maxlength="60" value="">
+                            </div>
+                            <button class="cta-button full-width" id="change-nickname-submit" type="submit">닉네임 변경</button>
+                            <p class="auth-message" id="change-nickname-message" role="status" aria-live="polite"></p>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 작성한 글 모달 -->
+            <div class="side-modal-overlay" id="my-posts-modal" style="display: none;">
+                <div class="side-modal">
+                    <div class="side-modal-header">
+                        <h3>내가 쓴 글</h3>
+                        <button type="button" class="side-modal-close" id="close-my-posts-modal">×</button>
+                    </div>
+                    <div class="side-modal-body">
+                        <div id="my-posts-list" class="trading-list-scroll">
+                            <div class="empty-trading-list">작성한 글이 없습니다.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 내가 댓글 단 글 모달 -->
+            <div class="side-modal-overlay" id="my-comments-modal" style="display: none;">
+                <div class="side-modal">
+                    <div class="side-modal-header">
+                        <h3>내가 댓글 단 글</h3>
+                        <button type="button" class="side-modal-close" id="close-my-comments-modal">×</button>
+                    </div>
+                    <div class="side-modal-body">
+                        <div id="my-comments-list" class="trading-list-scroll">
+                            <div class="empty-trading-list">댓글을 단 글이 없습니다.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 로그인 필요 오버레이 -->
+            <div class="login-block-overlay" id="login-overlay" aria-hidden="true">
+                <div class="login-block-content" role="dialog" aria-labelledby="login-block-title" aria-describedby="login-block-desc">
+                    <h3 id="login-block-title">로그인이 필요합니다</h3>
+                    <p id="login-block-desc">내 정보를 확인하려면 로그인해주세요.</p>
+                    <a href="login.html" class="login-block-button" aria-label="로그인 페이지로 이동">로그인</a>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="하단 카테고리">
+        <a href="index.html" class="bottom-nav__item">매매일지</a>
+        <a href="news.html" class="bottom-nav__item">뉴스</a>
+        <a href="community.html" class="bottom-nav__item">커뮤니티</a>
+        <a href="ai-analysis.html" class="bottom-nav__item">AI 분석</a>
+        <a href="calendar.html" class="bottom-nav__item">캘린더</a>
+        <a href="me.html" class="bottom-nav__item">내정보</a>
+    </nav>
+</body>
+</html>
+
+

@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TradeNote | 캘린더</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="assets/app.js" defer></script>
+</head>
+<body>
+    <header class="site-header">
+        <a href="index.html" class="brand" style="text-decoration: none; color: inherit;">
+            <span class="brand-mark" aria-hidden="true">📈</span>
+            <div>
+                <p class="brand-name">TradeNote</p>
+                <p class="brand-tagline">쉽고 간단하게</p>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="theme-toggle" id="theme-toggle" type="button" aria-label="테마 변경" title="다크모드/라이트모드 전환">
+                <span class="theme-icon">⚙️</span>
+            </button>
+        </div>
+    </header>
+
+    <nav class="side-nav" aria-label="주요 카테고리">
+        <a href="index.html" class="side-nav__item">매매일지</a>
+        <a href="news.html" class="side-nav__item">뉴스</a>
+        <a href="community.html" class="side-nav__item">커뮤니티</a>
+        <a href="ai-analysis.html" class="side-nav__item">AI 분석</a>
+        <a href="calendar.html" class="side-nav__item">캘린더</a>
+        <a href="me.html" class="side-nav__item">내정보</a>
+    </nav>
+
+    <main>
+        <section id="calendar" class="content-section" aria-label="캘린더">
+            <header class="section-header">
+                <h2>캘린더</h2>
+            </header>
+            <div class="calendar-container">
+                <div class="calendar-header">
+                    <button type="button" class="calendar-nav-btn" id="prev-month">‹</button>
+                    <h3 id="calendar-month-year"></h3>
+                    <button type="button" class="calendar-nav-btn" id="next-month">›</button>
+                </div>
+                <div class="calendar-weekdays">
+                    <div class="calendar-weekday">일</div>
+                    <div class="calendar-weekday">월</div>
+                    <div class="calendar-weekday">화</div>
+                    <div class="calendar-weekday">수</div>
+                    <div class="calendar-weekday">목</div>
+                    <div class="calendar-weekday">금</div>
+                    <div class="calendar-weekday">토</div>
+                </div>
+                <div class="calendar-days" id="calendar-days"></div>
+            </div>
+            <!-- 날짜 상세 모달 -->
+            <div class="side-modal-overlay" id="calendar-detail-modal">
+                <div class="side-modal">
+                    <div class="side-modal-header">
+                        <h3 id="calendar-detail-date"></h3>
+                        <button type="button" class="side-modal-close" id="close-calendar-detail">&times;</button>
+                    </div>
+                    <div class="side-modal-body" id="calendar-detail-content">
+                        <!-- 상세 정보가 여기에 표시됩니다 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="하단 카테고리">
+        <a href="index.html" class="bottom-nav__item">매매일지</a>
+        <a href="news.html" class="bottom-nav__item">뉴스</a>
+        <a href="community.html" class="bottom-nav__item">커뮤니티</a>
+        <a href="ai-analysis.html" class="bottom-nav__item">AI 분석</a>
+        <a href="calendar.html" class="bottom-nav__item">캘린더</a>
+        <a href="me.html" class="bottom-nav__item">내정보</a>
+    </nav>
+<script>
+document.addEventListener("DOMContentLoaded", async () => {
+    // app.js가 로드될 때까지 대기
+    let retries = 0;
+    while (typeof window.initAuth !== "function" && retries < 50) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        retries++;
+    }
+    
+    // 인증 초기화
+    if (typeof window.initAuth === "function") {
+        await window.initAuth();
+    }
+    
+    let currentDate = new Date();
+    let currentYear = currentDate.getFullYear();
+    let currentMonth = currentDate.getMonth();
+
+    // 매매 내역을 날짜별로 그룹화
+    function getTradingByDate() {
+        const history = typeof loadTradingHistory === "function" ? loadTradingHistory() : [];
+        const tradingByDate = {};
+        
+        history.forEach(record => {
+            const dateStr = record.date;
+            if (!tradingByDate[dateStr]) {
+                tradingByDate[dateStr] = [];
+            }
+            tradingByDate[dateStr].push(record);
+        });
+        
+        return tradingByDate;
+    }
+
+    // 캘린더 렌더링
+    function renderCalendar() {
+        const calendarDays = document.getElementById("calendar-days");
+        const monthYear = document.getElementById("calendar-month-year");
+        if (!calendarDays || !monthYear) return;
+
+        const tradingByDate = getTradingByDate();
+        
+        // 월/년 표시
+        const monthNames = ["1월", "2월", "3월", "4월", "5월", "6월", "7월", "8월", "9월", "10월", "11월", "12월"];
+        monthYear.textContent = `${currentYear}년 ${monthNames[currentMonth]}`;
+
+        // 첫 번째 날짜와 마지막 날짜 계산
+        const firstDay = new Date(currentYear, currentMonth, 1);
+        const lastDay = new Date(currentYear, currentMonth + 1, 0);
+        const startDate = new Date(firstDay);
+        startDate.setDate(startDate.getDate() - startDate.getDay()); // 주의 첫 날
+
+        calendarDays.innerHTML = "";
+
+        // 로컬 시간대 기준으로 날짜 문자열 생성 (YYYY-MM-DD)
+        function getLocalDateString(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // 6주치 날짜 렌더링
+        for (let i = 0; i < 42; i++) {
+            const date = new Date(startDate);
+            date.setDate(startDate.getDate() + i);
+            
+            const dayElement = document.createElement("div");
+            dayElement.className = "calendar-day";
+            
+            const isCurrentMonth = date.getMonth() === currentMonth;
+            const isToday = date.toDateString() === new Date().toDateString();
+            const dateStr = getLocalDateString(date);
+            const trades = tradingByDate[dateStr] || [];
+            
+            if (!isCurrentMonth) {
+                dayElement.classList.add("calendar-day-other-month");
+            }
+            if (isToday) {
+                dayElement.classList.add("calendar-day-today");
+            }
+            if (trades.length > 0) {
+                dayElement.classList.add("calendar-day-has-trade");
+            }
+
+            const dayNumber = document.createElement("div");
+            dayNumber.className = "calendar-day-number";
+            dayNumber.textContent = date.getDate();
+            dayElement.appendChild(dayNumber);
+
+            // 매매 내역 표시
+            if (trades.length > 0) {
+                const tradeIndicator = document.createElement("div");
+                tradeIndicator.className = "calendar-day-trades";
+                const uniqueStocks = [...new Set(trades.map(t => t.stock).filter(Boolean))];
+                // 최대 1개 종목만 표시하고 나머지는 숫자로
+                if (uniqueStocks.length === 1) {
+                    // 종목명이 길면 자르기
+                    const stockName = uniqueStocks[0];
+                    tradeIndicator.textContent = stockName.length > 6 ? stockName.substring(0, 5) + "..." : stockName;
+                } else {
+                    tradeIndicator.textContent = `${uniqueStocks[0].substring(0, 4)} +${uniqueStocks.length - 1}`;
+                }
+                dayElement.appendChild(tradeIndicator);
+                
+                // 클릭 이벤트
+                dayElement.style.cursor = "pointer";
+                dayElement.addEventListener("click", () => showDateDetail(dateStr, trades));
+            }
+
+            calendarDays.appendChild(dayElement);
+        }
+    }
+
+    // 날짜 상세 정보 표시
+    function showDateDetail(dateStr, trades) {
+        const modal = document.getElementById("calendar-detail-modal");
+        const dateTitle = document.getElementById("calendar-detail-date");
+        const content = document.getElementById("calendar-detail-content");
+        
+        if (!modal || !dateTitle || !content) return;
+
+        // YYYY-MM-DD 형식을 로컬 시간대로 파싱
+        const [year, month, day] = dateStr.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        const dateFormatted = date.toLocaleDateString("ko-KR", { 
+            year: "numeric", 
+            month: "long", 
+            day: "numeric",
+            weekday: "long"
+        });
+        
+        dateTitle.textContent = dateFormatted;
+
+        if (trades.length === 0) {
+            content.innerHTML = "<p>이 날짜에는 매매 내역이 없습니다.</p>";
+        } else {
+            let html = `<div style="margin-bottom: 1rem;"><strong>총 ${trades.length}건의 매매 내역</strong></div>`;
+            trades.forEach(trade => {
+                let profit = Number(trade.profit) || 0;
+                if (trade.result === "loss" && profit > 0) {
+                    profit = -profit;
+                }
+                const profitClass = profit > 0 ? "profit-positive" : profit < 0 ? "profit-negative" : "";
+                const profitText = typeof formatCurrency === "function" ? formatCurrency(profit) : profit.toLocaleString() + "원";
+                const resultText = trade.result === "win" ? "승" : trade.result === "draw" ? "무" : trade.result === "loss" ? "패" : "-";
+                const positionText = trade.position === "long" ? "롱" : trade.position === "short" ? "숏" : "-";
+                
+                html += `
+                    <div class="card" style="margin-bottom: 1rem; padding: 1rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <strong>${escapeHtml(trade.stock || "-")}</strong>
+                            <span class="trading-profit ${profitClass}">${profitText}</span>
+                        </div>
+                        <div style="color: var(--text-muted); font-size: 0.9rem;">
+                            <span>${positionText}</span> · 
+                            <span>${resultText}</span>
+                        </div>
+                        ${trade.profitReason ? `<div style="margin-top: 0.5rem; font-size: 0.9rem;">익절 이유: ${escapeHtml(trade.profitReason)}</div>` : ""}
+                        ${trade.lossReason ? `<div style="margin-top: 0.5rem; font-size: 0.9rem;">손절 이유: ${escapeHtml(trade.lossReason)}</div>` : ""}
+                    </div>
+                `;
+            });
+            content.innerHTML = html;
+        }
+
+        modal.classList.add("active");
+        const sideModal = modal.querySelector(".side-modal");
+        if (sideModal) {
+            sideModal.classList.add("active");
+        }
+    }
+
+    function closeCalendarDetail() {
+        const modal = document.getElementById("calendar-detail-modal");
+        if (modal) {
+            modal.classList.remove("active");
+            const sideModal = modal.querySelector(".side-modal");
+            if (sideModal) {
+                sideModal.classList.remove("active");
+            }
+        }
+    }
+
+    function escapeHtml(str) {
+        return String(str ?? "").replace(/[&<>"]/g, s => ({ "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;" }[s]));
+    }
+
+    // 이전/다음 월 버튼
+    document.getElementById("prev-month")?.addEventListener("click", () => {
+        currentMonth--;
+        if (currentMonth < 0) {
+            currentMonth = 11;
+            currentYear--;
+        }
+        renderCalendar();
+    });
+
+    document.getElementById("next-month")?.addEventListener("click", () => {
+        currentMonth++;
+        if (currentMonth > 11) {
+            currentMonth = 0;
+            currentYear++;
+        }
+        renderCalendar();
+    });
+
+    // 모달 닫기
+    document.getElementById("close-calendar-detail")?.addEventListener("click", closeCalendarDetail);
+    document.getElementById("calendar-detail-modal")?.addEventListener("click", (e) => {
+        if (e.target.id === "calendar-detail-modal") {
+            closeCalendarDetail();
+        }
+    });
+
+    // 초기 렌더링
+    renderCalendar();
+});
+</script>
+</body>
+</html>
+
+

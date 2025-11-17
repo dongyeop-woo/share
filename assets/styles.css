@@ -27,7 +27,37 @@
     --new-button-bg: var(--primary);
     --new-button-text: #ffffff;
     --new-button-hover: #3ab0e0;
+    --header-height: 72px;
+    --bottom-nav-height: 58px;
     font-family: "Pretendard Variable", "Noto Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+html, body {
+    height: 100%;
+    min-height: 100vh;
+    overflow: hidden; /* 방지: 모바일 브라우저 풀-투-리프레시로 전체가 끌려 내려오는 현상 */
+    overscroll-behavior-y: none; /* 안드로이드/크롬 기반 풀-투-리프레시 차단 */
+}
+
+/* 실제 스크롤은 메인 컨텐츠만 사용 */
+main {
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch; /* iOS 스크롤 관성 */
+}
+
+/* Scrollbar hidden (keep scrolling, hide UI) */
+main,
+.trading-list-scroll,
+.side-modal-body {
+    -ms-overflow-style: none;  /* IE/Edge */
+    scrollbar-width: none;     /* Firefox */
+}
+main::-webkit-scrollbar,
+.trading-list-scroll::-webkit-scrollbar,
+.side-modal-body::-webkit-scrollbar {
+    display: none;             /* Chrome/Safari */
 }
 
 [data-theme="dark"] {
@@ -112,20 +142,28 @@ img {
     gap: 0.75rem;
 }
 
-.theme-toggle {
-    padding: 0.5rem;
-    border: 1px solid var(--card-border);
-    border-radius: 50%;
-    background: var(--surface);
-    color: var(--text);
-    cursor: pointer;
-    display: flex;
+/* 바디 내 로그인/회원 영역 */
+.body-auth {
+    display: none;
     align-items: center;
-    justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
-    transition: all 0.2s ease;
-    font-size: 1.1rem;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    padding: 0.75rem 3vw 0;
+}
+.body-auth .auth-status {
+    display: none;
+}
+.body-auth .auth-status.visible {
+    display: inline-flex;
+}
+
+@media (min-width: 1025px) {
+    .body-auth {
+        display: flex;
+    }
+}
+.theme-toggle {
+    display: none !important; /* 다크모드 버튼 숨김 */
 }
 
 .theme-toggle:hover,
@@ -155,6 +193,7 @@ img {
 
 .brand-mark {
     font-size: 2rem;
+    display: none; /* 아이콘 숨김 */
 }
 
 .brand-name {
@@ -233,13 +272,17 @@ img {
 }
 
 .auth-status {
-    display: inline-flex;
+    display: none; /* 기본 숨김 - JS로 로그인 시에만 표시 */
     align-items: center;
     gap: 0.65rem;
     background: var(--surface);
     border: 1px solid var(--card-border);
     border-radius: 999px;
     padding: 0.5rem 1rem;
+}
+
+.auth-status.visible {
+    display: inline-flex;
 }
 
 .auth-status span {
@@ -269,6 +312,136 @@ main {
     gap: 4rem;
 }
 
+/* 데스크탑 왼쪽 사이드 카테고리 */
+.side-nav {
+    position: fixed;
+    top: 70px;
+    left: 0;
+    width: 200px;
+    display: none;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 0.75rem 1rem;
+    border-right: 1px solid var(--primary);
+}
+
+.side-nav__item {
+    display: block;
+    padding: 0.6rem 0.9rem;
+    border-radius: 10px;
+    color: var(--text);
+    border: 1px solid transparent;
+}
+
+.side-nav__item:hover,
+.side-nav__item:focus-visible {
+    background: rgba(74, 201, 255, 0.12);
+    border-color: rgba(74, 201, 255, 0.32);
+}
+
+@media (min-width: 1025px) {
+    .side-nav {
+        display: flex;
+    }
+    main {
+        /* Keep content visually centered while reserving space for the left sidebar */
+        padding-left: 220px;            /* reserve space for side-nav */
+        max-width: calc(var(--max-width) + 220px); /* include sidebar space in centering calc */
+        margin-left: auto;
+        margin-right: auto;
+        box-sizing: border-box;
+        height: 100vh;
+        padding-bottom: 5rem;
+    }
+    /* Align header brand center with content area (account for left sidebar) */
+    .site-header {
+        display: none; /* hide header on desktop */
+    }
+    
+    /* 데스크탑에서 커뮤니티 리스트 하단 패딩 */
+    #community .trading-list-scroll {
+        max-height: calc(100vh - 120px);
+        padding-bottom: 3.5rem; /* FAB 버튼 공간 */
+    }
+}
+
+/* 모바일 하단 바 카테고리 */
+.bottom-nav {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: var(--bottom-nav-height);
+    display: none;
+    align-items: center;
+    justify-content: space-around;
+    gap: 0.5rem;
+    background: var(--surface);
+    border-top: 1px solid var(--card-border);
+    box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
+    z-index: 1200;
+    padding: 0 0.5rem env(safe-area-inset-bottom);
+}
+
+.bottom-nav__item {
+    color: var(--text);
+    font-size: 0.9rem;
+    padding: 0.4rem 0.6rem;
+    border-radius: 8px;
+}
+
+.bottom-nav__item:focus-visible,
+.bottom-nav__item:hover {
+    background: rgba(74, 201, 255, 0.12);
+}
+
+@media (max-width: 768px) {
+    .bottom-nav {
+        display: flex;
+    }
+    main {
+        height: calc(100vh - var(--header-height) - var(--bottom-nav-height));
+        padding-bottom: calc(4rem + var(--bottom-nav-height));
+    }
+    
+    /* 모바일에서 사이드 모달 전체 화면 표시 */
+    .side-modal {
+        width: 100%;
+        max-width: 100vw;
+        left: 0;
+        right: 0;
+    }
+    
+    .side-modal-header {
+        padding: 1rem 1.25rem;
+    }
+    
+    .side-modal-header h3 {
+        font-size: 1.25rem;
+    }
+    
+    .side-modal-body {
+        padding: 1.25rem;
+        padding-bottom: calc(1.25rem + var(--bottom-nav-height) + 1rem);
+    }
+}
+
+/* 태블릿까지 하단바 고정 노출 */
+@media (max-width: 1024px) {
+    .bottom-nav {
+        display: flex;
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: 100%;
+    }
+    main {
+        height: calc(100vh - var(--header-height) - var(--bottom-nav-height));
+        padding-bottom: calc(4rem + var(--bottom-nav-height));
+    }
+}
+
 .highlight-card {
     background: var(--card);
     padding: 2.25rem;
@@ -296,6 +469,313 @@ main {
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
     gap: 1.5rem;
     align-items: flex-start;
+}
+
+/* 커뮤니티 탭 */
+.sub-tabs {
+    display: inline-flex;
+    gap: 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 0.35rem;
+}
+
+.sub-tab {
+    padding: 0.5rem 0.9rem;
+    border-radius: 8px;
+    color: var(--text);
+    text-decoration: none;
+}
+
+.sub-tab.active {
+    background: var(--primary);
+    color: #ffffff;
+}
+
+.news-tabs {
+    display: flex;
+    gap: 0.75rem;
+    margin: 1.5rem 0;
+    padding: 0.5rem;
+    background: var(--surface);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+}
+
+.news-tab {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    border: none;
+    border-radius: 8px;
+    background: transparent;
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.news-tab:hover {
+    background: rgba(74, 201, 255, 0.1);
+}
+
+.news-tab.active {
+    background: var(--primary);
+    color: #ffffff;
+}
+
+.news-tab.active:hover {
+    background: #3ab0e0;
+}
+
+.sub-tab-panel {
+    margin-top: 0.75rem;
+}
+
+.vote-row {
+    display: inline-flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.vote-btn {
+    border: 1px solid var(--card-border);
+    background: var(--surface);
+    color: var(--text);
+    border-radius: 999px;
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.vote-btn:hover:not(:disabled) {
+    background: var(--card-hover);
+}
+
+.vote-btn:disabled {
+    opacity: 0.8;
+    cursor: not-allowed;
+}
+
+.vote-btn-active[data-type="up"] {
+    border-color: var(--primary) !important;
+    border-width: 2px !important;
+    background: var(--surface) !important;
+    color: var(--text) !important;
+}
+
+.vote-btn-active[data-type="up"]:hover:not(:disabled) {
+    background: rgba(74, 201, 255, 0.1) !important;
+}
+
+.vote-btn-active[data-type="down"] {
+    border-color: var(--negative) !important;
+    border-width: 2px !important;
+    background: var(--surface) !important;
+    color: var(--text) !important;
+}
+
+.vote-btn-active[data-type="down"]:hover:not(:disabled) {
+    background: rgba(255, 71, 87, 0.1) !important;
+}
+
+.vote-btn-small {
+    padding: 0.15rem 0.4rem;
+    font-size: 0.75rem;
+    gap: 0.15rem;
+}
+
+.vote-count {
+    min-width: 2ch;
+    font-weight: 600;
+    margin-left: 0.15rem;
+}
+
+.post-card-clickable {
+    transition: background-color 0.2s ease, transform 0.1s ease;
+}
+
+.post-card-clickable:hover {
+    background: var(--card-hover);
+    transform: translateY(-1px);
+}
+
+.post-card-clickable:active {
+    transform: translateY(0);
+}
+
+/* 댓글 아이템 스타일 */
+.comment-item {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 0.75rem 1rem;
+    background: var(--surface);
+    border-radius: 8px;
+    border: 1px solid var(--card-border);
+    margin-bottom: 0.5rem;
+    transition: background-color 0.2s ease;
+}
+
+.comment-item:hover {
+    background: var(--card-hover);
+}
+
+.comment-content {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    width: 100%;
+}
+
+.comment-author {
+    font-weight: 600;
+    font-size: 0.9rem;
+    color: var(--text);
+    flex-shrink: 0;
+}
+
+.comment-text {
+    font-size: 0.9rem;
+    color: var(--text);
+    flex: 1;
+    min-width: 0;
+    word-break: break-word;
+    line-height: 1.4;
+}
+
+.comment-date {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    flex-shrink: 0;
+    margin-left: auto;
+}
+
+.comment-actions-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.25rem;
+    gap: 0.75rem;
+}
+
+.comment-vote-row {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.comment-edit-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
+.comment-edit-btn,
+.comment-delete-btn {
+    padding: 0.25rem 0.6rem;
+    border: 1px solid var(--card-border);
+    background: var(--surface);
+    color: var(--text);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+.comment-edit-btn:hover {
+    background: rgba(74, 201, 255, 0.1);
+    color: var(--primary);
+    border-color: var(--primary);
+}
+
+.comment-delete-btn:hover {
+    background: rgba(255, 71, 87, 0.1);
+    color: var(--negative);
+    border-color: var(--negative);
+}
+
+.comment-edited {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-left: 0.25rem;
+}
+
+.mention-dropdown {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    background: var(--surface);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-height: 150px;
+    overflow-y: auto;
+    z-index: 1000;
+    margin-bottom: 0.5rem;
+}
+
+.mention-item {
+    padding: 0.5rem 0.75rem;
+    cursor: pointer;
+    font-size: 0.9rem;
+    color: var(--text);
+    transition: background-color 0.2s ease;
+}
+
+.mention-item:hover,
+.mention-item.selected {
+    background: var(--card-hover);
+    color: var(--primary);
+}
+
+.mention-tag {
+    color: var(--primary);
+    font-weight: 600;
+    background: rgba(74, 201, 255, 0.1);
+    padding: 0.1rem 0.25rem;
+    border-radius: 4px;
+}
+
+/* Floating Action Button (FAB) */
+.fab {
+    position: fixed;
+    right: 1rem;
+    bottom: calc(var(--bottom-nav-height) + 0.75rem);
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.22);
+    font-size: 2rem;
+    line-height: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    z-index: 1500;
+}
+
+.fab:hover,
+.fab:focus-visible {
+    filter: brightness(0.95);
+    transform: translateY(-1px);
+}
+
+@media (min-width: 1025px) {
+    .fab {
+        bottom: 1rem;
+    }
 }
 
 .auth-panel {
@@ -400,6 +880,12 @@ main {
     gap: 1.5rem;
 }
 
+/* 커뮤니티 섹션 하단 여백 제거 */
+#community.content-section {
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
 .section-header {
     display: flex;
     align-items: flex-end;
@@ -436,20 +922,27 @@ main {
 .card-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-    gap: 1.5rem;
+    gap: 1rem;
 }
 
 .card {
     background: var(--card);
-    border-radius: 20px;
+    border-radius: 16px;
     border: 1px solid var(--card-border);
-    padding: 1.75rem;
+    padding: 1.25rem;
     box-shadow: var(--shadow-soft);
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.75rem;
     background: #f8f9fa;
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.notice-card {
+    border: 2px solid #ff5757 !important;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
 }
 
 /* 뉴스 피드 카드 스타일 - 테마별 반대 색상 */
@@ -462,19 +955,21 @@ main {
 
 .card-grid .card h3 {
     margin: 0;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     color: var(--news-card-text);
+    line-height: 1.4;
 }
 
 .card-grid .card p {
     margin: 0;
     color: var(--news-card-text-muted);
-    line-height: 1.55;
+    line-height: 1.5;
+    font-size: 0.9rem;
 }
 
 .card-grid .card footer {
     margin-top: auto;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     color: var(--news-card-text-muted);
 }
 
@@ -498,10 +993,10 @@ main {
 
 .card-grid .card .news-image {
     width: 100%;
-    height: 200px;
+    height: 160px;
     object-fit: cover;
-    border-radius: 12px;
-    margin-bottom: 1rem;
+    border-radius: 10px;
+    margin-bottom: 0.75rem;
     display: block;
 }
 
@@ -971,14 +1466,7 @@ tbody tr + tr {
 }
 
 .site-footer {
-    background: var(--surface);
-    padding: 2.5rem 3vw;
-    border-top: 1px solid var(--card-border);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 1rem;
+    display: none !important;
 }
 
 .footer-brand {
@@ -1284,6 +1772,8 @@ tbody tr + tr {
     transition: max-height 0.4s ease, opacity 0.3s ease, padding 0.3s ease;
     overflow: hidden;
     opacity: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 .trading-section.collapsed .trading-section-content {
@@ -1363,7 +1853,7 @@ tbody tr + tr {
     bottom: 0;
     background: rgba(0, 0, 0, 0.4);
     backdrop-filter: blur(4px);
-    z-index: 1000;
+    z-index: 2000;
     opacity: 0;
     visibility: hidden;
     transition: opacity 0.3s ease, visibility 0.3s ease;
@@ -1383,7 +1873,7 @@ tbody tr + tr {
     height: 100vh;
     background: var(--card);
     box-shadow: var(--shadow-soft);
-    z-index: 1001;
+    z-index: 2001;
     transform: translateX(100%);
     transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
@@ -1437,6 +1927,7 @@ tbody tr + tr {
     flex: 1;
     overflow-y: auto;
     padding: 2rem;
+    padding-bottom: calc(2rem + var(--bottom-nav-height));
 }
 
 .side-modal-body .trading-form {
@@ -1592,12 +2083,23 @@ tbody tr + tr {
 }
 
 .trading-list-scroll {
-    display: flex;
-    flex-direction: column;
-    gap: 1rem;
-    max-height: 500px;
+    display: block;
+    max-height: 300px;
+    overflow: hidden;
+    flex: 0 1 auto;
+    min-height: 0;
+}
+
+.trading-list-scroll.expanded {
+    max-height: none;
     overflow-y: auto;
-    padding-right: 0.5rem;
+    flex: 1 1 auto;
+}
+
+.trading-list-scroll .empty-trading-list {
+    padding: 2rem;
+    text-align: center;
+    color: var(--text-muted);
 }
 
 .trading-list-scroll::-webkit-scrollbar {
@@ -1640,6 +2142,32 @@ tbody tr + tr {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
+}
+
+.profile-clickable {
+    padding: 0.75rem 1rem;
+    border-radius: 8px;
+    transition: background-color 0.2s ease, transform 0.2s ease;
+}
+
+.profile-clickable:hover {
+    background-color: rgba(74, 201, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.profile-value {
+    font-size: 1.2rem !important;
+    font-weight: 600 !important;
+}
+
+#me .trading-item-label {
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+}
+
+#me .trading-item-value {
+    font-size: 1.2rem !important;
+    font-weight: 600 !important;
 }
 
 .trading-item-label {
@@ -1771,11 +2299,63 @@ tbody tr + tr {
     gap: 2rem;
 }
 
+.profit-charts-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    width: 100%;
+}
+
+.profit-charts-row {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1.5rem;
+    width: 100%;
+}
+
+.profit-charts-row-center {
+    justify-content: center;
+    grid-template-columns: 1fr;
+    max-width: 300px;
+    margin: 0 auto;
+}
+
+.profit-chart-wrapper {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.75rem;
+}
+
 .profit-chart {
     position: relative;
-    width: 280px;
-    height: 280px;
+    width: 120px;
+    height: 120px;
     margin: 0 auto;
+}
+
+@media (max-width: 768px) {
+    .profit-charts-grid {
+        gap: 1rem;
+    }
+    
+    .profit-charts-row {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .profit-charts-row-center {
+        max-width: 100%;
+    }
+    
+    .profit-chart {
+        width: 110px;
+        height: 110px;
+    }
+    
+    .profit-chart-wrapper {
+        gap: 0.5rem;
+    }
 }
 
 .profit-pie-chart {
@@ -1790,7 +2370,7 @@ tbody tr + tr {
 
 .profit-pie-slice {
     fill: none;
-    stroke-width: 20;
+    stroke-width: 15;
     stroke-linecap: round;
     transition: opacity 0.3s ease;
     cursor: pointer;
@@ -1807,6 +2387,7 @@ tbody tr + tr {
     transform: translate(-50%, -50%);
     text-align: center;
     pointer-events: none;
+    width: 100%;
 }
 
 .profit-chart-center .summary-amount {
@@ -1816,12 +2397,113 @@ tbody tr + tr {
     color: var(--text);
 }
 
+.profit-summary-center {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: center;
+    justify-content: center;
+}
+
+.profit-center-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.profit-center-label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.profit-center-value {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.profit-center-value.profit-positive {
+    color: var(--primary);
+}
+
+.profit-center-value.profit-negative {
+    color: #ff5757;
+}
+
 .profit-legend {
     display: flex;
     flex-direction: column;
-    gap: 0.75rem;
+    gap: 0.4rem;
     width: 100%;
-    max-width: 300px;
+    max-width: 180px;
+    font-size: 0.75rem;
+    max-height: calc(3 * 3.5rem + 2 * 0.4rem); /* 3개 항목(각 약 3.5rem) + 2개 gap */
+    overflow-y: auto;
+    overflow-x: hidden;
+    -ms-overflow-style: none;  /* IE/Edge */
+    scrollbar-width: thin;     /* Firefox */
+}
+.profit-legend::-webkit-scrollbar {
+    width: 4px;             /* Chrome/Safari */
+}
+.profit-legend::-webkit-scrollbar-track {
+    background: transparent;
+}
+.profit-legend::-webkit-scrollbar-thumb {
+    background: var(--card-border);
+    border-radius: 2px;
+}
+.profit-legend::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+/* 총 수익금 요약 리스트 */
+.profit-summary-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    width: 100%;
+}
+
+.profit-summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.25rem;
+    background: var(--card);
+    border-radius: 12px;
+    border: 1px solid var(--card-border);
+    transition: all 0.2s ease;
+}
+
+.profit-summary-item:hover {
+    background: var(--surface);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.profit-summary-label {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.profit-summary-value {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.profit-summary-value.profit-positive {
+    color: var(--primary);
+}
+
+.profit-summary-value.profit-negative {
+    color: #ff5757;
 }
 
 .profit-legend-item {
@@ -1890,6 +2572,12 @@ tbody tr + tr {
     .brand-name {
         font-size: 1.1rem;
     }
+    /* 모바일에서는 로고를 좌측 정렬 */
+    .site-header .brand {
+        grid-column: 1;
+        justify-self: start;
+    }
+
 
     .brand-tagline {
         font-size: 0.75rem;
@@ -1930,7 +2618,7 @@ tbody tr + tr {
     }
 
     main {
-        padding: 1.5rem 4vw 3rem;
+        padding: 1.5rem 4vw 4rem;
         gap: 2.5rem;
     }
 
@@ -1990,10 +2678,7 @@ tbody tr + tr {
     }
 
     .site-footer {
-        align-items: flex-start;
-        padding: 2rem 4vw;
-        flex-direction: column;
-        gap: 1.5rem;
+        display: none !important;
     }
 
     .chat-widget {
@@ -2081,6 +2766,9 @@ tbody tr + tr {
 
     .profit-legend {
         gap: 0.75rem;
+        max-height: calc(3 * 3.5rem + 2 * 0.75rem); /* 3개 항목(각 약 3.5rem) + 2개 gap */
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
     .side-modal {
@@ -2128,7 +2816,7 @@ tbody tr + tr {
     }
 
     main {
-        padding: 1.25rem 4vw 2.5rem;
+        padding: 1.25rem 4vw 4rem;
         gap: 2rem;
     }
 
@@ -2150,6 +2838,10 @@ tbody tr + tr {
 
     .trading-section-content {
         padding: 1.25rem;
+    }
+
+    .trading-list-scroll {
+        max-height: 250px;
     }
 
     .profit-chart {
@@ -2176,6 +2868,291 @@ tbody tr + tr {
 /* 로그인 필요 오버레이 */
 #trading {
     position: relative;
+}
+
+#community {
+    position: relative;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+/* 커뮤니티 페이지의 main 하단 패딩 조정 (FAB 버튼 고려) */
+body:has(#community) main {
+    padding-bottom: 0;
+    height: calc(100vh - var(--header-height) - var(--bottom-nav-height));
+}
+
+@media (min-width: 1025px) {
+    body:has(#community) main {
+        padding-bottom: 0;
+        height: 100vh;
+    }
+}
+
+/* 커뮤니티 리스트는 스크롤 가능하도록 */
+#community .trading-list-scroll {
+    max-height: calc(100vh - 180px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding-bottom: calc(var(--bottom-nav-height) + 3.5rem); /* 하단 네비게이션 바 + FAB 버튼 공간 */
+}
+
+#community .trading-list-scroll .card {
+    margin-bottom: 0;
+}
+
+#community .trading-list-scroll .card:not(:last-child) {
+    margin-bottom: 1rem;
+}
+
+@media (max-width: 768px) {
+    #community .trading-list-scroll {
+        max-height: calc(100vh - 150px);
+        gap: 0.75rem;
+        padding-bottom: calc(var(--bottom-nav-height) + 3.5rem); /* 하단 네비게이션 바 + FAB 버튼 공간 */
+    }
+    
+    #community .trading-list-scroll .card:not(:last-child) {
+        margin-bottom: 0.75rem;
+    }
+}
+
+#me {
+    position: relative;
+}
+
+/* 캘린더 스타일 */
+.calendar-container {
+    max-width: 900px;
+    margin: 1.5rem auto;
+    background: var(--card);
+    border-radius: 20px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-soft);
+}
+
+.calendar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+
+.calendar-header h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+.calendar-nav-btn {
+    background: var(--primary);
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    width: 40px;
+    height: 40px;
+    font-size: 1.5rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+.calendar-nav-btn:hover {
+    background: #3ab0e0;
+    transform: scale(1.05);
+}
+
+.calendar-weekdays {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.calendar-weekday {
+    text-align: center;
+    font-weight: 600;
+    color: var(--text-muted);
+    padding: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.calendar-days {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 0.5rem;
+}
+
+.calendar-day {
+    aspect-ratio: 1;
+    background: var(--surface);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    padding: 0.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    transition: all 0.2s ease;
+    min-height: 75px;
+    max-height: 75px;
+    overflow: hidden;
+}
+
+.calendar-day:hover {
+    background: rgba(74, 201, 255, 0.1);
+    border-color: var(--primary);
+}
+
+.calendar-day-other-month {
+    opacity: 0.4;
+}
+
+.calendar-day-today {
+    background: rgba(74, 201, 255, 0.15);
+    border-color: var(--primary);
+    border-width: 2px;
+}
+
+.calendar-day-has-trade {
+    background: rgba(74, 201, 255, 0.2);
+    border-color: var(--primary);
+}
+
+.calendar-day-number {
+    font-weight: 600;
+    font-size: 1rem;
+    color: var(--text);
+    margin-bottom: 0.25rem;
+    flex-shrink: 0;
+    line-height: 1.2;
+}
+
+.calendar-day-trades {
+    font-size: 0.75rem;
+    color: var(--primary);
+    font-weight: 500;
+    margin-top: auto;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: 100%;
+    max-height: 1.2em;
+    line-height: 1.2;
+    flex-shrink: 0;
+}
+
+@media (min-width: 1025px) {
+    .calendar-container {
+        max-width: 800px;
+        padding: 1.25rem;
+        margin: 1rem auto;
+    }
+    
+    .calendar-header {
+        margin-bottom: 1rem;
+    }
+    
+    .calendar-header h3 {
+        font-size: 1.25rem;
+    }
+    
+    .calendar-nav-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 1.3rem;
+    }
+    
+    .calendar-weekdays {
+        gap: 0.35rem;
+        margin-bottom: 0.35rem;
+    }
+    
+    .calendar-weekday {
+        padding: 0.4rem;
+        font-size: 0.85rem;
+    }
+    
+    .calendar-days {
+        gap: 0.35rem;
+    }
+    
+    .calendar-day {
+        min-height: 70px;
+        max-height: 70px;
+        padding: 0.4rem;
+        aspect-ratio: 1;
+        overflow: hidden;
+    }
+    
+    .calendar-day-number {
+        font-size: 0.9rem;
+        margin-bottom: 0.2rem;
+    }
+    
+    .calendar-day-trades {
+        font-size: 0.7rem;
+        line-height: 1.2;
+    }
+}
+
+@media (max-width: 768px) {
+    .calendar-container {
+        padding: 0.75rem;
+        margin: 0.5rem;
+        border-radius: 12px;
+    }
+    
+    .calendar-header {
+        margin-bottom: 1rem;
+    }
+    
+    .calendar-header h3 {
+        font-size: 1.1rem;
+    }
+    
+    .calendar-nav-btn {
+        width: 32px;
+        height: 32px;
+        font-size: 1.2rem;
+    }
+    
+    .calendar-weekdays {
+        gap: 0.25rem;
+        margin-bottom: 0.25rem;
+    }
+    
+    .calendar-weekday {
+        padding: 0.35rem 0.25rem;
+        font-size: 0.8rem;
+    }
+    
+    .calendar-days {
+        gap: 0.25rem;
+    }
+    
+    .calendar-day {
+        min-height: 50px;
+        max-height: 50px;
+        padding: 0.25rem;
+        aspect-ratio: 1;
+        overflow: hidden;
+    }
+    
+    .calendar-day-number {
+        font-size: 0.85rem;
+        margin-bottom: 0.15rem;
+    }
+    
+    .calendar-day-trades {
+        font-size: 0.6rem;
+        line-height: 1.2;
+    }
 }
 
 .login-block-overlay {
@@ -2248,6 +3225,9 @@ tbody tr + tr {
 
 #trading .trading-section-content {
     padding: 1rem;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 #trading .profit-chart-container {
@@ -2266,4 +3246,762 @@ tbody tr + tr {
 #trading .profit-legend {
     max-width: 240px;
     gap: 0.5rem;
+    max-height: calc(3 * 3.5rem + 2 * 0.5rem); /* 3개 항목(각 약 3.5rem) + 2개 gap */
+    overflow-y: auto;
+    overflow-x: hidden;
+    -ms-overflow-style: none;  /* IE/Edge */
+    scrollbar-width: thin;     /* Firefox */
+}
+#trading .profit-legend::-webkit-scrollbar {
+    width: 4px;             /* Chrome/Safari */
+}
+#trading .profit-legend::-webkit-scrollbar-track {
+    background: transparent;
+}
+#trading .profit-legend::-webkit-scrollbar-thumb {
+    background: var(--card-border);
+    border-radius: 2px;
+}
+#trading .profit-legend::-webkit-scrollbar-thumb:hover {
+    background: var(--text-muted);
+}
+
+.more-btn {
+    width: 100%;
+    margin-top: 1rem;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.more-btn:hover,
+.more-btn:focus-visible {
+    background: var(--primary);
+    color: #ffffff;
+    border-color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* 매매내역 테이블 스타일 */
+.trading-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.trading-table thead {
+    background: var(--card);
+    border-bottom: 2px solid var(--card-border);
+}
+
+.trading-table th {
+    padding: 0.75rem 0.5rem;
+    text-align: left;
+    font-weight: 600;
+    color: var(--text);
+    font-size: 0.85rem;
+}
+
+.trading-table td {
+    padding: 0.75rem 0.5rem;
+    border-bottom: 1px solid var(--card-border);
+    color: var(--text);
+}
+
+.trading-table tbody tr:hover {
+    background: var(--card);
+}
+
+.trading-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.trading-position-badge,
+.trading-result-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.trading-position-badge.long {
+    background: rgba(74, 201, 255, 0.2);
+    color: var(--primary);
+}
+
+.trading-position-badge.short {
+    background: rgba(255, 87, 87, 0.2);
+    color: #ff5757;
+}
+
+.trading-result-badge.win {
+    background: rgba(74, 201, 255, 0.2);
+    color: var(--primary);
+}
+
+.trading-result-badge.draw {
+    background: rgba(158, 158, 158, 0.2);
+    color: #9e9e9e;
+}
+
+.trading-result-badge.loss {
+    background: rgba(255, 87, 87, 0.2);
+    color: #ff5757;
+}
+
+.trading-profit {
+    font-weight: 600;
+}
+
+.trading-profit.profit-positive {
+    color: var(--primary);
+}
+
+.trading-profit.profit-negative {
+    color: #ff5757;
+}
+
+.detail-btn {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid var(--card-border);
+    border-radius: 6px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.detail-btn:hover {
+    background: var(--primary);
+    color: #ffffff;
+    border-color: var(--primary);
+}
+
+/* 매매내역 상세 모달 스타일 */
+.trading-detail-field {
+    margin-bottom: 1.5rem;
+}
+
+.trading-detail-field label {
+    display: block;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.trading-detail-field > div {
+    color: var(--text);
+    font-size: 1rem;
+}
+
+.trading-detail-chart {
+    margin: 1.5rem 0;
+}
+
+.trading-detail-chart h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    margin-bottom: 0.75rem;
+    color: var(--text);
+}
+
+.trading-detail-actions {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--card-border);
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+}
+
+.trading-detail-actions .edit-btn {
+    padding: 0.75rem 1.5rem;
+    border: 1px solid var(--primary);
+    border-radius: 8px;
+    background: transparent;
+    color: var(--primary);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.trading-detail-actions .edit-btn:hover {
+    background: var(--primary);
+    color: #ffffff;
+}
+
+.trading-detail-actions .delete-btn {
+    padding: 0.75rem 1.5rem;
+    border: 1px solid #ff5757;
+    border-radius: 8px;
+    background: transparent;
+    color: #ff5757;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.trading-detail-actions .delete-btn:hover {
+    background: #ff5757;
+    color: #ffffff;
+}
+
+@media (max-width: 768px) {
+    .trading-table {
+        font-size: 0.8rem;
+    }
+
+    .trading-table th,
+    .trading-table td {
+        padding: 0.5rem 0.25rem;
+    }
+
+    .trading-table th:nth-child(1),
+    .trading-table td:nth-child(1) {
+        min-width: 80px;
+    }
+
+    .trading-table th:nth-child(2),
+    .trading-table td:nth-child(2) {
+        min-width: 60px;
+    }
+
+    .detail-btn {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.75rem;
+    }
+    
+    /* 모바일에서 상세 모달 내용 스타일 */
+    .trading-detail-field {
+        margin-bottom: 1.25rem;
+    }
+    
+    .trading-detail-field label {
+        font-size: 0.85rem;
+        margin-bottom: 0.4rem;
+    }
+    
+    .trading-detail-field > div {
+        font-size: 0.95rem;
+        word-break: break-word;
+    }
+    
+    .trading-detail-chart {
+        margin: 1.25rem 0;
+    }
+    
+    .trading-detail-chart h4 {
+        font-size: 0.95rem;
+        margin-bottom: 0.6rem;
+    }
+    
+    .trading-detail-chart img {
+        max-width: 100%;
+        height: auto;
+    }
+    
+}
+
+/* AI 분석 선택 버튼 스타일 */
+.analysis-selection {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 2rem;
+    min-height: 400px;
+    padding: 2rem;
+}
+
+.analysis-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 3rem 4rem;
+    border: 2px solid var(--card-border);
+    border-radius: 16px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 1.2rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    min-width: 200px;
+    min-height: 200px;
+}
+
+.analysis-btn:hover {
+    background: var(--primary);
+    color: #ffffff;
+    border-color: var(--primary);
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(74, 201, 255, 0.3);
+}
+
+.analysis-btn-icon {
+    font-size: 4rem;
+    line-height: 1;
+}
+
+.analysis-btn-text {
+    font-size: 1.3rem;
+}
+
+.analysis-result {
+    margin-top: 2rem;
+}
+
+/* 분석 로딩 상태 */
+.analysis-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    min-height: 200px;
+    padding: 2rem;
+}
+
+.analysis-loading p {
+    margin: 0;
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+/* 로딩 스피너 */
+.loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid var(--card-border);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.back-btn {
+    margin-bottom: 1.5rem;
+    padding: 0.75rem 1.5rem;
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.back-btn:hover {
+    background: var(--card);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+@media (max-width: 768px) {
+    .analysis-selection {
+        flex-direction: column;
+        gap: 1.5rem;
+        min-height: auto;
+        padding: 2rem 1rem;
+    }
+
+    .analysis-btn {
+        width: 100%;
+        max-width: 300px;
+        padding: 2rem;
+        min-height: 150px;
+    }
+
+    .analysis-btn-icon {
+        font-size: 3rem;
+    }
+
+    .analysis-btn-text {
+        font-size: 1.1rem;
+    }
+}
+
+/* 프로필 페이지 스타일 */
+.profile-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+    gap: 1rem;
+}
+
+.profile-avatar-circle {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    background: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #ffffff;
+    font-size: 2rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.profile-avatar-initial {
+    line-height: 1;
+}
+
+.profile-name {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    text-align: center;
+}
+
+.profile-subtitle {
+    margin: 0;
+    font-size: 0.95rem;
+    color: var(--text-muted);
+}
+
+.profile-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.profile-stat-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 10px;
+    padding: 1rem;
+    display: flex;
+    align-items: center;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.profile-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-soft);
+    border-color: var(--primary);
+    background: var(--surface);
+}
+
+.profile-stat-card.profile-clickable {
+    cursor: pointer;
+}
+
+.profile-stat-content {
+    flex: 1;
+    min-width: 0;
+    text-align: center;
+}
+
+.profile-stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+    margin-bottom: 0.25rem;
+}
+
+.profile-stat-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.profile-menu-card {
+    background: var(--card);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+}
+
+.profile-menu-title {
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text);
+}
+
+/* 내정보 페이지 로그인/로그아웃 UI */
+.profile-auth-section {
+    margin-bottom: 0.5rem;
+}
+
+.profile-auth-trigger {
+    display: inline-block;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    border: 1px solid var(--primary);
+    background: var(--primary);
+    color: #ffffff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    width: 100%;
+    text-align: center;
+}
+
+.profile-auth-trigger:hover {
+    background: var(--primary-hover, var(--primary));
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.profile-auth-status {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 1rem;
+    background: var(--surface);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+}
+
+.profile-auth-display-name {
+    font-weight: 600;
+    color: var(--text);
+    font-size: 1rem;
+}
+
+.profile-auth-logout {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    border: 1px solid var(--card-border);
+    background: var(--card);
+    color: var(--text);
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.profile-auth-logout:hover {
+    background: var(--surface);
+    border-color: var(--primary);
+    color: var(--primary);
+}
+
+/* 로그아웃 및 회원탈퇴 버튼 */
+.profile-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 1px solid var(--card-border);
+}
+
+.profile-logout-btn {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--text);
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: color 0.2s ease;
+    text-decoration: none;
+}
+
+.profile-logout-btn:hover {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+.profile-delete-btn {
+    padding: 0;
+    border: none;
+    background: none;
+    color: #dc3545;
+    cursor: pointer;
+    font-weight: 500;
+    font-size: 0.95rem;
+    transition: color 0.2s ease;
+    text-decoration: none;
+}
+
+.profile-delete-btn:hover {
+    color: #c82333;
+    text-decoration: underline;
+}
+
+.profile-menu-item-email {
+    cursor: default;
+    background: var(--surface);
+}
+
+.profile-menu-item-email:hover {
+    transform: none;
+    border-color: var(--card-border);
+    background: var(--surface);
+}
+
+.profile-email {
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    text-decoration: none;
+    transition: color 0.2s ease;
+    margin-left: auto;
+}
+
+.profile-email:hover {
+    color: var(--primary);
+}
+
+.profile-menu-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.profile-menu-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+}
+
+.profile-menu-item:hover {
+    background: var(--card);
+    border-color: var(--primary);
+    transform: translateX(4px);
+}
+
+.profile-menu-text {
+    flex: 1;
+    font-weight: 500;
+}
+
+.profile-menu-arrow {
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    font-weight: 300;
+}
+
+.profile-menu-item:hover .profile-menu-arrow {
+    color: var(--primary);
+    transform: translateX(4px);
+}
+
+.profile-edit-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.profile-edit-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: var(--surface);
+    border: 1px solid var(--card-border);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text);
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    width: 100%;
+    text-align: left;
+    font-family: inherit;
+}
+
+.profile-edit-item:hover {
+    background: var(--card);
+    border-color: var(--primary);
+    transform: translateX(4px);
+}
+
+.profile-edit-text {
+    flex: 1;
+    font-weight: 500;
+}
+
+.profile-edit-arrow {
+    font-size: 1.5rem;
+    color: var(--text-muted);
+    font-weight: 300;
+}
+
+.profile-edit-item:hover .profile-edit-arrow {
+    color: var(--primary);
+    transform: translateX(4px);
+}
+
+@media (max-width: 768px) {
+    .profile-header {
+        margin-bottom: 1.5rem;
+        gap: 0.75rem;
+    }
+
+    .profile-avatar-circle {
+        width: 64px;
+        height: 64px;
+        font-size: 1.5rem;
+    }
+
+    .profile-name {
+        font-size: 1.25rem;
+    }
+
+    .profile-stats-grid {
+        grid-template-columns: 1fr;
+        gap: 0.5rem;
+    }
+
+    .profile-stat-card {
+        padding: 0.875rem;
+    }
+
+    .profile-stat-value {
+        font-size: 1.25rem;
+    }
+
+    .profile-menu-card {
+        padding: 1.25rem;
+    }
+
+
+    .profile-menu-item {
+        padding: 0.875rem;
+    }
 }
