@@ -307,9 +307,14 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const target = ev.target;
                 if (!(target instanceof HTMLElement)) return;
                 if (target.classList.contains("vote-btn") && target.dataset.type && !target.disabled) {
+                    // 로그인 확인
+                    if (typeof guardTradingAccess === "function" && !guardTradingAccess()) {
+                        return;
+                    }
                     const type = target.dataset.type;
                     requestJSON(`${AUTH_API_BASE}/api/community/posts/${postId}/vote?type=${encodeURIComponent(type)}`, {
-                        method: "POST"
+                        method: "POST",
+                        credentials: "include"
                     })
                     .then((res) => {
                         const upBtn = votes.querySelector('.vote-btn[data-type="up"]');
@@ -348,6 +353,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                         const msg = err?.message || "투표에 실패했습니다.";
                         if (msg.includes("이미 투표")) {
                             alert("이미 투표하셨습니다. 다른 투표로 변경할 수 있습니다.");
+                        } else if (msg.includes("로그인") || msg.includes("Unauthorized") || msg.includes("401")) {
+                            alert("로그인이 필요합니다. 로그인 페이지로 이동합니다.");
+                            window.location.href = "login.html";
                         } else {
                             alert(msg);
                         }
@@ -450,10 +458,15 @@ document.addEventListener("DOMContentLoaded", async () => {
                                     const t = e.target;
                                     if (!(t instanceof HTMLElement)) return;
                                     if (t.classList.contains("vote-btn") && t.dataset.type && !t.disabled) {
+                                        // 로그인 확인
+                                        if (typeof guardTradingAccess === "function" && !guardTradingAccess()) {
+                                            return;
+                                        }
                                         const type = t.dataset.type;
                                         const cid = voteRow.getAttribute("data-comment-id");
                                         requestJSON(`${AUTH_API_BASE}/api/community/comments/${cid}/vote?type=${encodeURIComponent(type)}`, {
-                                            method: "POST"
+                                            method: "POST",
+                                            credentials: "include"
                                         }).then(() => {
                                             // 간단히 증가 반영: 상세를 다시 로드하여 정확히 반영
                                             openDetail(postId);
@@ -461,6 +474,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                                             const msg = err?.message || "투표 실패";
                                             if (msg.includes("이미 투표")) {
                                                 alert("이미 투표하셨습니다. 다른 투표로 변경할 수 있습니다.");
+                                            } else if (msg.includes("로그인") || msg.includes("Unauthorized") || msg.includes("401")) {
+                                                alert("로그인이 필요합니다. 로그인 페이지로 이동합니다.");
+                                                window.location.href = "login.html";
                                             } else {
                                                 alert(msg);
                                             }
