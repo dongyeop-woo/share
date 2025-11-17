@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>TradeNote | 캘린더</title>
     <link rel="stylesheet" href="assets/styles.css">
     <script src="assets/app.js" defer></script>
@@ -223,7 +224,17 @@ document.addEventListener("DOMContentLoaded", async () => {
                 const profitClass = profit > 0 ? "profit-positive" : profit < 0 ? "profit-negative" : "";
                 const profitText = typeof formatCurrency === "function" ? formatCurrency(profit) : profit.toLocaleString() + "원";
                 const resultText = trade.result === "win" ? "승" : trade.result === "draw" ? "무" : trade.result === "loss" ? "패" : "-";
-                const positionText = trade.position === "long" ? "롱" : trade.position === "short" ? "숏" : "-";
+                const getPositionText = (pos) => {
+                    const positionMap = {
+                        "long": "롱",
+                        "short": "숏",
+                        "swing": "스윙",
+                        "scalping": "스캘핑",
+                        "day": "데이트레이딩"
+                    };
+                    return positionMap[pos] || pos || "-";
+                };
+                const positionText = getPositionText(trade.position);
                 
                 html += `
                     <div class="card" style="margin-bottom: 1rem; padding: 1rem;">

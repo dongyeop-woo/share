@@ -326,8 +326,13 @@ async def _fetch_finnhub_news(category: str) -> List[NewsArticle]:
     return articles
 
 
-async def _fetch_rss_news(rss_urls: List[str]) -> List[NewsArticle]:
-    """RSS 피드에서 뉴스를 가져옵니다."""
+async def _fetch_rss_news(rss_urls: List[str], translate: bool = False) -> List[NewsArticle]:
+    """RSS 피드에서 뉴스를 가져옵니다.
+    
+    Args:
+        rss_urls: RSS 피드 URL 목록
+        translate: True이면 번역 시도 (미국 뉴스용)
+    """
     articles: List[NewsArticle] = []
     
     async with httpx.AsyncClient(timeout=10.0) as client:
@@ -376,12 +381,24 @@ async def _fetch_rss_news(rss_urls: List[str]) -> List[NewsArticle]:
                     # summary가 빈 문자열이면 None으로 설정
                     final_summary = summary if summary else None
                     
+                    # 번역이 필요한 경우 (미국 뉴스)
+                    headline_ko = None
+                    summary_ko = None
+                    if translate:
+                        # 번역은 나중에 _fetch_usa_news에서 처리
+                        headline_ko = None
+                        summary_ko = None
+                    else:
+                        # 한국 뉴스는 이미 한국어
+                        headline_ko = headline
+                        summary_ko = final_summary
+                    
                     articles.append(
                         NewsArticle(
                             headline=headline,
-                            headline_ko=headline,  # 한국 뉴스는 이미 한국어
+                            headline_ko=headline_ko,
                             summary=final_summary,
-                            summary_ko=final_summary,
+                            summary_ko=summary_ko,
                             url=url,
                             source=source,
                             published_at=published_at,
@@ -400,7 +417,7 @@ async def _fetch_rss_news(rss_urls: List[str]) -> List[NewsArticle]:
 
 async def _fetch_korea_news() -> List[NewsArticle]:
     """한국 경제 뉴스를 RSS 피드에서 가져옵니다."""
-    articles = await _fetch_rss_news(KOREA_NEWS_RSS)
+    articles = await _fetch_rss_news(KOREA_NEWS_RSS, translate=False)
     
     # 요약이 없는 기사에 대해 처리
     result = []
@@ -430,7 +447,7 @@ async def _fetch_korea_news() -> List[NewsArticle]:
 
 async def _fetch_usa_news() -> List[NewsArticle]:
     """미국 경제 뉴스를 RSS 피드에서 가져옵니다."""
-    articles = await _fetch_rss_news(USA_NEWS_RSS)
+    articles = await _fetch_rss_news(USA_NEWS_RSS, translate=True)
     
     # RSS 피드에서 뉴스를 가져오지 못한 경우 Finnhub 사용
     if not articles or len(articles) == 0:
@@ -447,14 +464,20 @@ async def _fetch_usa_news() -> List[NewsArticle]:
     for article in articles:
         if article.headline and not article.headline_ko:
             try:
-                article.headline_ko = translate_to_korean(article.headline) or article.headline
-            except Exception:
+                translated = translate_to_korean(article.headline)
+                article.headline_ko = translated if translated and translated != article.headline else article.headline
+                logger.info(f"번역 완료: {article.headline[:50]}... -> {article.headline_ko[:50]}...")
+            except Exception as e:
+                logger.warning(f"헤드라인 번역 실패: {e}")
                 article.headline_ko = article.headline
         
         if article.summary and not article.summary_ko:
             try:
-                article.summary_ko = translate_to_korean(article.summary) or article.summary
-            except Exception:
+                translated = translate_to_korean(article.summary)
+                article.summary_ko = translated if translated and translated != article.summary else article.summary
+                logger.info(f"요약 번역 완료: {article.summary[:50] if article.summary else 'None'}...")
+            except Exception as e:
+                logger.warning(f"요약 번역 실패: {e}")
                 article.summary_ko = article.summary
     
     return articles

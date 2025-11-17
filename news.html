@@ -60,6 +60,8 @@
 <script>
 // 뉴스 탭 전환 및 로드
 let currentNewsType = "korea";
+let isLoadingNews = false;
+let pendingLoadType = null;
 
 const fetchNewsByType = async (type) => {
     try {
@@ -105,31 +107,79 @@ const loadNews = async (type) => {
     const newsList = document.getElementById("news-list");
     if (!newsList) return;
     
+    // 이미 로딩 중이면 대기
+    if (isLoadingNews) {
+        pendingLoadType = type;
+        return;
+    }
+    
+    // 타입 검증
+    if (type !== "korea" && type !== "usa") {
+        console.warn("잘못된 뉴스 타입:", type);
+        return;
+    }
+    
+    isLoadingNews = true;
+    currentNewsType = type;
+    
     newsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">로딩 중...</div>';
     
-    const items = await fetchNewsByType(type);
-    
-    if (typeof populateNews === "function") {
-        populateNews(items);
-    } else {
-        newsList.innerHTML = items.length > 0 
-            ? items.map(item => `
-                <article class="card">
-                    ${item.image ? `<img src="${item.image}" alt="" class="news-image" loading="lazy">` : ''}
-                    <h3>${item.title}</h3>
-                    <p>${item.summary || ''}</p>
-                    <footer>
-                        <span>${item.source}</span>
-                        <time>${item.time}</time>
-                    </footer>
-                    <a href="${item.url}" target="_blank" rel="noopener" class="card-link"></a>
-                </article>
-            `).join('')
-            : '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">뉴스가 없습니다.</div>';
+    try {
+        const items = await fetchNewsByType(type);
+        
+        // 요청이 완료된 후에도 현재 요청한 타입이 맞는지 확인 (다른 탭으로 전환되었을 수 있음)
+        if (currentNewsType !== type) {
+            console.log(`뉴스 타입이 변경되어 응답 무시 (요청: ${type}, 현재: ${currentNewsType})`);
+            isLoadingNews = false;
+            // 대기 중인 로드가 있으면 처리
+            if (pendingLoadType) {
+                const nextType = pendingLoadType;
+                pendingLoadType = null;
+                await loadNews(nextType);
+            }
+            return;
+        }
+        
+        if (typeof populateNews === "function") {
+            populateNews(items);
+        } else {
+            newsList.innerHTML = items.length > 0 
+                ? items.map(item => `
+                    <article class="card">
+                        ${item.image ? `<img src="${item.image}" alt="" class="news-image" loading="lazy">` : ''}
+                        <h3>${item.title}</h3>
+                        <p>${item.summary || ''}</p>
+                        <footer>
+                            <span>${item.source}</span>
+                            <time>${item.time}</time>
+                        </footer>
+                        <a href="${item.url}" target="_blank" rel="noopener" class="card-link"></a>
+                    </article>
+                `).join('')
+                : '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">뉴스가 없습니다.</div>';
+        }
+    } catch (error) {
+        console.error("뉴스 로드 오류:", error);
+        if (currentNewsType === type) {
+            newsList.innerHTML = '<div style="text-align: center; padding: 2rem; color: var(--text-muted);">뉴스를 불러오는 중 오류가 발생했습니다.</div>';
+        }
+    } finally {
+        isLoadingNews = false;
+        // 대기 중인 로드가 있으면 처리
+        if (pendingLoadType && currentNewsType === pendingLoadType) {
+            const nextType = pendingLoadType;
+            pendingLoadType = null;
+            await loadNews(nextType);
+        }
     }
 };
 
 document.addEventListener("DOMContentLoaded", async () => {
+    // 먼저 초기 상태 명확히 설정
+    currentNewsType = "korea";
+    isLoadingNews = false;
+    pendingLoadType = null;
+    
     // app.js가 로드될 때까지 대기
     let retries = 0;
     while (typeof window.initAuth !== "function" && retries < 50) {
@@ -144,31 +194,36 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     const newsTabs = document.querySelectorAll(".news-tab");
     
-    // 초기 상태: 한국 뉴스 탭 활성화
+    // 초기 상태: 한국 뉴스 탭 활성화 (명확히 설정)
     const koreaTab = document.querySelector('.news-tab[data-news-type="korea"]');
     const usaTab = document.querySelector('.news-tab[data-news-type="usa"]');
     if (koreaTab) koreaTab.classList.add("active");
     if (usaTab) usaTab.classList.remove("active");
+    
+    // 다시 한번 명확히 설정
     currentNewsType = "korea";
     
     // 탭 클릭 이벤트
     newsTabs.forEach(tab => {
         tab.addEventListener("click", async () => {
             const type = tab.getAttribute("data-news-type");
-            if (type === currentNewsType) return;
+            if (!type || (type !== "korea" && type !== "usa")) return;
+            if (type === currentNewsType && !isLoadingNews) return;
             
-            currentNewsType = type;
-            
-            // 탭 활성화 상태 업데이트
+            // 탭 활성화 상태 먼저 업데이트
             newsTabs.forEach(t => t.classList.remove("active"));
             tab.classList.add("active");
+            
+            // 타입 변경
+            currentNewsType = type;
             
             // 뉴스 로드
             await loadNews(type);
         });
     });
     
-    // 초기 로드 (한국 뉴스)
+    // 초기 로드 (한국 뉴스만) - 약간의 지연을 두어 DOM이 완전히 로드된 후 실행
+    await new Promise(resolve => setTimeout(resolve, 100));
     await loadNews("korea");
 });
 </script>

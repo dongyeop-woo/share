@@ -958,6 +958,19 @@ const formatCurrency = (amount) => {
     return new Intl.NumberFormat("ko-KR").format(amount) + "원";
 };
 
+// 숫자 입력 필드에 콤마 포맷팅 추가/제거 유틸리티
+const formatNumberInput = (value) => {
+    // 숫자만 추출 (콤마 제거)
+    const numericValue = value.replace(/[^\d]/g, '');
+    // 콤마 포맷팅
+    return numericValue ? new Intl.NumberFormat("ko-KR").format(Number(numericValue)) : '';
+};
+
+const unformatNumberInput = (value) => {
+    // 콤마 제거하여 숫자만 반환
+    return value.replace(/[^\d]/g, '');
+};
+
 const renderTradingItem = (record) => {
     const item = document.createElement("div");
     item.className = "trading-item";
@@ -995,7 +1008,7 @@ const renderTradingItem = (record) => {
         <div class="trading-item-field">
             <span class="trading-item-label">포지션</span>
             <span class="trading-item-position ${record.position}">
-                ${record.position === "long" ? "롱" : "숏"}
+                ${record.position === "long" ? "롱" : record.position === "short" ? "숏" : record.position === "swing" ? "스윙" : record.position === "scalping" ? "스캘핑" : record.position === "day" ? "데이트레이딩" : record.position || "-"}
             </span>
         </div>
         <div class="trading-item-field">
@@ -1051,7 +1064,17 @@ const renderTradingTableRow = (record) => {
     const resultText = record.result === "win" ? "승" : record.result === "draw" ? "무" : record.result === "loss" ? "패" : "-";
     const resultClass = record.result || "";
 
-    const positionText = record.position === "long" ? "롱" : record.position === "short" ? "숏" : "-";
+    const getPositionText = (pos) => {
+        const positionMap = {
+            "long": "롱",
+            "short": "숏",
+            "swing": "스윙",
+            "scalping": "스캘핑",
+            "day": "데이트레이딩"
+        };
+        return positionMap[pos] || pos || "-";
+    };
+    const positionText = getPositionText(record.position);
     const positionClass = record.position || "";
 
     row.innerHTML = `
@@ -1090,7 +1113,17 @@ const showTradingDetail = (record) => {
     const resultText = record.result === "win" ? "승" : record.result === "draw" ? "무" : record.result === "loss" ? "패" : "-";
     const resultClass = record.result || "";
 
-    const positionText = record.position === "long" ? "롱" : record.position === "short" ? "숏" : "-";
+    const getPositionText = (pos) => {
+        const positionMap = {
+            "long": "롱",
+            "short": "숏",
+            "swing": "스윙",
+            "scalping": "스캘핑",
+            "day": "데이트레이딩"
+        };
+        return positionMap[pos] || pos || "-";
+    };
+    const positionText = getPositionText(record.position);
     const positionClass = record.position || "";
 
     const chartImage = record.chartImage ? `
@@ -1218,7 +1251,8 @@ const openEditTradingModal = (record) => {
     if (record.result === "loss" && profit < 0) {
         profit = Math.abs(profit);
     }
-    document.getElementById("edit-profit").value = profit;
+    // 수정 모달 열 때 콤마 포맷팅 적용
+    document.getElementById("edit-profit").value = formatNumberInput(profit.toString());
     
     document.getElementById("edit-profit-reason").value = record.profitReason || "";
     document.getElementById("edit-loss-reason").value = record.lossReason || "";
@@ -1589,6 +1623,35 @@ const initTradingForms = () => {
     
     initImageUpload();
 
+    // 수익금 입력 필드에 콤마 포맷팅 적용
+    const profitInputs = ['today-profit', 'month-profit', 'edit-profit'];
+    profitInputs.forEach(inputId => {
+        const input = document.getElementById(inputId);
+        if (input) {
+            // 입력 타입을 text로 변경 (number는 콤마를 허용하지 않음)
+            input.type = 'text';
+            input.inputMode = 'numeric';
+            
+            // 입력 시 포맷팅
+            input.addEventListener('input', (e) => {
+                const cursorPos = e.target.selectionStart;
+                const oldValue = e.target.value;
+                const formatted = formatNumberInput(e.target.value);
+                e.target.value = formatted;
+                
+                // 커서 위치 조정 (콤마가 추가/제거되면 위치 보정)
+                const diff = formatted.length - oldValue.length;
+                const newPos = Math.max(0, cursorPos + diff);
+                e.target.setSelectionRange(newPos, newPos);
+            });
+            
+            // 포커스 아웃 시에도 포맷팅 적용
+            input.addEventListener('blur', (e) => {
+                e.target.value = formatNumberInput(e.target.value);
+            });
+        }
+    });
+
     // 오늘 매매내역 폼
     const todayForm = document.getElementById("today-trading-form");
     if (todayForm) {
@@ -1609,7 +1672,7 @@ const initTradingForms = () => {
                 });
             }
             
-            let profit = Number(document.getElementById("today-profit").value) || 0;
+            let profit = Number(unformatNumberInput(document.getElementById("today-profit").value)) || 0;
             const result = document.getElementById("today-result").value || null;
             // 패배인 경우 수익금을 음수로 변환
             if (result === "loss" && profit > 0) {
@@ -1665,7 +1728,7 @@ const initTradingForms = () => {
                 });
             }
             
-            let profit = Number(document.getElementById("month-profit").value) || 0;
+            let profit = Number(unformatNumberInput(document.getElementById("month-profit").value)) || 0;
             const result = document.getElementById("month-result").value || null;
             // 패배인 경우 수익금을 음수로 변환
             if (result === "loss" && profit > 0) {
@@ -1729,7 +1792,7 @@ const initTradingForms = () => {
                 }
             }
             
-            let profit = Number(document.getElementById("edit-profit").value) || 0;
+            let profit = Number(unformatNumberInput(document.getElementById("edit-profit").value)) || 0;
             const result = document.getElementById("edit-result").value || null;
             // 패배인 경우 수익금을 음수로 변환
             if (result === "loss" && profit > 0) {

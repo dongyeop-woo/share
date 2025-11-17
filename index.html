@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <title>TradeNote | 주식 인사이트 허브</title>
     <link rel="stylesheet" href="assets/styles.css">
     <script src="assets/app.js" defer></script>
@@ -180,6 +181,9 @@
                                     <select id="edit-position" required>
                                         <option value="long">롱</option>
                                         <option value="short">숏</option>
+                                        <option value="swing">스윙</option>
+                                        <option value="scalping">스캘핑</option>
+                                        <option value="day">데이트레이딩</option>
                                     </select>
                                 </div>
                                 <div class="form-field">
@@ -193,7 +197,7 @@
                                 </div>
                                 <div class="form-field">
                                     <label for="edit-profit">수익금 (원)</label>
-                                    <input type="number" id="edit-profit" placeholder="0" required>
+                                    <input type="text" id="edit-profit" inputmode="numeric" placeholder="0" required>
                                 </div>
                                 <div class="form-field form-field-full">
                                     <label for="edit-chart">차트 이미지</label>
@@ -268,6 +272,9 @@
                         <select id="today-position" required>
                             <option value="long">롱</option>
                             <option value="short">숏</option>
+                            <option value="swing">스윙</option>
+                            <option value="scalping">스캘핑</option>
+                            <option value="day">데이트레이딩</option>
                         </select>
                     </div>
                     <div class="form-field">
@@ -281,7 +288,7 @@
                     </div>
                     <div class="form-field">
                         <label for="today-profit">수익금 (원)</label>
-                        <input type="number" id="today-profit" placeholder="0" required>
+                        <input type="text" id="today-profit" inputmode="numeric" placeholder="0" required>
                     </div>
                     <div class="form-field form-field-full">
                         <label for="today-chart">차트 이미지</label>
@@ -333,6 +340,9 @@
                         <select id="month-position" required>
                             <option value="long">롱</option>
                             <option value="short">숏</option>
+                            <option value="swing">스윙</option>
+                            <option value="scalping">스캘핑</option>
+                            <option value="day">데이트레이딩</option>
                         </select>
                     </div>
                     <div class="form-field">
@@ -346,7 +356,7 @@
                     </div>
                     <div class="form-field">
                         <label for="month-profit">수익금 (원)</label>
-                        <input type="number" id="month-profit" placeholder="0" required>
+                        <input type="text" id="month-profit" inputmode="numeric" placeholder="0" required>
                     </div>
                     <div class="form-field form-field-full">
                         <label for="month-chart">차트 이미지</label>
