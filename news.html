@@ -67,7 +67,7 @@ const fetchNewsByType = async (type) => {
         const isProduction = window.location.hostname === 'dongyeop-woo.github.io' || 
                              window.location.hostname.endsWith('.github.io');
         const API_BASE = isProduction 
-            ? 'https://54.253.167.33'  // FastAPI (Nginx를 통해 /api/ 경로로 라우팅, HTTPS)
+            ? 'http://54.253.167.33'  // FastAPI (Nginx를 통해 /api/ 경로로 라우팅)
             : `http://${window.location.hostname}:8000`;
         const endpoint = type === "korea" ? "/api/news/korea" : "/api/news/usa";
         const response = await fetch(`${API_BASE}${endpoint}`);
