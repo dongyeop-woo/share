@@ -97,7 +97,7 @@ const guardTradingAccess = () => {
     return true;
 };
 
-const updateAuthUI = () => {
+let updateAuthUI = () => {
     // 모든 페이지에서 로그인 정보 UI 숨김 (헤더에 표시하지 않음)
     const toggle = document.getElementById("auth-toggle");
     const status = document.getElementById("auth-status");
@@ -2251,7 +2251,9 @@ const initAIAnalysis = () => {
     // authState 변경 감지
     const originalUpdateAuthUI = updateAuthUI;
     updateAuthUI = function() {
-        originalUpdateAuthUI.apply(this, arguments);
+        if (originalUpdateAuthUI) {
+            originalUpdateAuthUI.apply(this, arguments);
+        }
         updateAIAnalysisUI();
     };
 };
@@ -3096,7 +3098,9 @@ const initMe = async () => {
     // authState 변경 감지 - bootstrap 함수에서 updateAuthUI 호출 시 함께 호출되도록
     const originalUpdateAuthUI = updateAuthUI;
     updateAuthUI = function() {
-        originalUpdateAuthUI.apply(this, arguments);
+        if (originalUpdateAuthUI) {
+            originalUpdateAuthUI.apply(this, arguments);
+        }
         if (window.location.pathname.includes("me.html")) {
             updateMeUI();
         }
