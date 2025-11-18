@@ -138,12 +138,50 @@ def summarize_headline(text: str, max_tokens: int = _DEFAULT_MAX_TOKENS) -> str:
 
 def translate_to_korean(text: str) -> str:
     """
-    Translate English text into Korean using deep-translator library.
+    Translate English text into Korean using Ollama LLM.
     Falls back to original text if translation fails.
     """
     if not text:
         return ""
 
+    # Ollama를 사용한 번역 시도
+    try:
+        import os
+        import httpx
+        
+        ollama_model = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")
+        ollama_host = os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434")
+        
+        # 텍스트가 너무 길면 잘라서 번역
+        max_length = 500
+        text_to_translate = text[:max_length] if len(text) > max_length else text
+        
+        # Ollama API 직접 호출
+        with httpx.Client(timeout=30.0) as client:
+            response = client.post(
+                f"{ollama_host}/api/generate",
+                json={
+                    "model": ollama_model,
+                    "prompt": f"Translate the following English text to Korean. Only return the Korean translation, no explanations:\n\n{text_to_translate}",
+                    "stream": False,
+                    "options": {
+                        "temperature": 0.3,
+                        "num_predict": 200,
+                    }
+                }
+            )
+            if response.status_code == 200:
+                data = response.json()
+                translated = data.get("response", "").strip()
+                if translated and translated != text_to_translate and len(translated) > 0:
+                    logger.info(f"Translation successful (Ollama): {text[:50]}... -> {translated[:50]}...")
+                    return translated
+    except ImportError:
+        logger.warning("httpx not available for translation")
+    except Exception as exc:  # noqa: BLE001
+        logger.warning(f"Ollama translation failed: {exc}")
+    
+    # Fallback: Try deep-translator if available
     try:
         from deep_translator import GoogleTranslator
         
@@ -154,7 +192,7 @@ def translate_to_korean(text: str) -> str:
         translated = translator.translate(text_to_translate)
         
         if translated and translated != text_to_translate:
-            logger.info(f"Translation successful: {text[:50]}... -> {translated[:50]}...")
+            logger.info(f"Translation successful (deep-translator): {text[:50]}... -> {translated[:50]}...")
             return translated
         else:
             logger.warning("Translation returned same text or empty")

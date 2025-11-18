@@ -274,33 +274,41 @@ AI 분석 기능에 대한 질문이 있으면 상세하고 친절하게 설명�
     try:
         if OLLAMA_AVAILABLE:
             # Ollama API 사용 (로컬 LLM API)
-            ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2:1b")  # 기본값: 작은 모델
+            ollama_model = os.getenv("OLLAMA_MODEL", "qwen2.5:0.5b")  # 기본값: 작은 모델
             try:
-                # 빠른 응답을 위해 타임아웃 설정 및 토큰 수 제한
-                # 타임아웃을 5초로 제한하여 빠른 응답 보장
-                import asyncio
-                response = await asyncio.wait_for(
-                    asyncio.to_thread(
-                        ollama.chat,
-                        model=ollama_model,
-                        messages=[
-                            {"role": "system", "content": system_prompt + ai_analysis_context},
-                            {"role": "user", "content": f"{context}질문: {user_message}" if context else f"질문: {user_message}"}
-                        ],
-                        options={
-                            "temperature": 0.7,
-                            "num_predict": 150 if is_ai_analysis_question else 200,  # 더 짧게 생성하여 속도 향상
+                # httpx를 사용하여 Ollama API 직접 호출 (더 안정적)
+                ollama_url = os.getenv("OLLAMA_HOST", "http://127.0.0.1:11434")
+                # 타임아웃을 120초로 늘림 (모델 로딩 시간 포함)
+                async with httpx.AsyncClient(timeout=120.0) as client:
+                    response = await client.post(
+                        f"{ollama_url}/api/chat",
+                        json={
+                            "model": ollama_model,
+                            "messages": [
+                                {"role": "system", "content": system_prompt + ai_analysis_context},
+                                {"role": "user", "content": f"{context}질문: {user_message}" if context else f"질문: {user_message}"}
+                            ],
+                            "options": {
+                                "temperature": 0.7,
+                                "num_predict": 200 if is_ai_analysis_question else 300,
+                            },
+                            "stream": False
                         }
-                    ),
-                    timeout=5.0  # 5초 타임아웃
-                )
-                reply = response.get("message", {}).get("content", "")
-                sources.append(ChatSource(
-                    type="local_llm",
-                    title="Ollama LLM API",
-                    content=f"모델: {ollama_model}"
-                ))
-            except asyncio.TimeoutError:
+                    )
+                    if response.status_code == 200:
+                        data = response.json()
+                        reply = data.get("message", {}).get("content", "")
+                        if not reply or len(reply.strip()) == 0:
+                            raise ValueError("Ollama 응답이 비어있습니다")
+                        sources.append(ChatSource(
+                            type="local_llm",
+                            title="Ollama LLM API",
+                            content=f"모델: {ollama_model}"
+                        ))
+                        logger.info(f"Ollama API 성공: {len(reply)}자 응답 생성")
+                    else:
+                        raise HTTPException(status_code=response.status_code, detail=f"Ollama API 오류: {response.text}")
+            except httpx.TimeoutException:
                 logger.warning("Ollama API 타임아웃, fallback 사용")
                 reply = _generate_fallback_reply(user_message, market_info, news_info)
             except Exception as e:
@@ -538,10 +546,11 @@ KOREA_NEWS_RSS = [
 ]
 
 USA_NEWS_RSS = [
-    "https://feeds.finance.yahoo.com/rss/2.0/headline?s=^GSPC&region=US&lang=en-US",  # Yahoo Finance S&P 500
-    "https://feeds.finance.yahoo.com/rss/2.0/headline?s=^DJI&region=US&lang=en-US",  # Yahoo Finance Dow
+    "https://rss.cnn.com/rss/money_latest.rss",  # CNN Money (가장 안정적)
+    "https://feeds.bloomberg.com/markets/news.rss",  # Bloomberg Markets
     "https://www.cnbc.com/id/100003114/device/rss/rss.html",  # CNBC News
-    "https://feeds.reuters.com/reuters/businessNews",  # Reuters Business
+    "https://www.marketwatch.com/rss/topstories",  # MarketWatch
+    "https://feeds.finance.yahoo.com/rss/2.0/headline?s=^GSPC&region=US&lang=en-US",  # Yahoo Finance S&P 500 (백업)
 ]
 
 
@@ -616,14 +625,20 @@ async def _fetch_rss_news(rss_urls: List[str], translate: bool = False) -> List[
     """
     articles: List[NewsArticle] = []
     
-    async with httpx.AsyncClient(timeout=10.0) as client:
+    async with httpx.AsyncClient(timeout=10.0, follow_redirects=True) as client:
         for rss_url in rss_urls:
             try:
-                response = await client.get(rss_url)
+                response = await client.get(rss_url, headers={"User-Agent": "Mozilla/5.0 (compatible; RSS Reader)"})
                 if response.status_code != 200:
+                    logger.debug(f"RSS 피드 응답 실패 ({rss_url}): HTTP {response.status_code}")
                     continue
                 
                 feed = feedparser.parse(response.text)
+                
+                # 피드가 유효한지 확인
+                if not hasattr(feed, 'entries') or not feed.entries:
+                    logger.debug(f"RSS 피드에 항목이 없음 ({rss_url})")
+                    continue
                 
                 for entry in feed.entries[:10]:  # 각 피드에서 최대 10개
                     # 날짜 파싱
@@ -728,7 +743,14 @@ async def _fetch_korea_news() -> List[NewsArticle]:
 
 async def _fetch_usa_news() -> List[NewsArticle]:
     """미국 경제 뉴스를 RSS 피드에서 가져옵니다."""
-    articles = await _fetch_rss_news(USA_NEWS_RSS, translate=True)
+    articles = []
+    
+    # RSS 피드 시도
+    try:
+        articles = await _fetch_rss_news(USA_NEWS_RSS, translate=True)
+        logger.info(f"RSS 피드에서 {len(articles)}개의 미국 뉴스를 가져왔습니다.")
+    except Exception as e:
+        logger.warning(f"RSS 피드 가져오기 실패: {e}")
     
     # RSS 피드에서 뉴스를 가져오지 못한 경우 Finnhub 사용
     if not articles or len(articles) == 0:
@@ -737,31 +759,32 @@ async def _fetch_usa_news() -> List[NewsArticle]:
             finnhub_articles = await _fetch_finnhub_news("general")
             # Finnhub 뉴스 중 미국 관련 뉴스 필터링 (간단히 처음 20개 사용)
             articles = finnhub_articles[:20]
+            logger.info(f"Finnhub에서 {len(articles)}개의 미국 뉴스를 가져왔습니다.")
         except Exception as e:
             logger.warning(f"Finnhub에서도 미국 뉴스를 가져오지 못했습니다: {e}")
-            return []
+            # 최소한 빈 배열이 아닌 기본 메시지라도 반환
+            if not articles:
+                return []
     
-    # 미국 뉴스는 영어이므로 번역 시도
+    # 미국 뉴스는 영어이므로 번역 시도 (번역 실패해도 원문 반환)
     for article in articles:
         if article.headline and not article.headline_ko:
             try:
                 translated = translate_to_korean(article.headline)
                 article.headline_ko = translated if translated and translated != article.headline else article.headline
-                logger.info(f"번역 완료: {article.headline[:50]}... -> {article.headline_ko[:50]}...")
             except Exception as e:
-                logger.warning(f"헤드라인 번역 실패: {e}")
+                logger.debug(f"헤드라인 번역 실패 (원문 사용): {e}")
                 article.headline_ko = article.headline
         
         if article.summary and not article.summary_ko:
             try:
                 translated = translate_to_korean(article.summary)
                 article.summary_ko = translated if translated and translated != article.summary else article.summary
-                logger.info(f"요약 번역 완료: {article.summary[:50] if article.summary else 'None'}...")
             except Exception as e:
-                logger.warning(f"요약 번역 실패: {e}")
+                logger.debug(f"요약 번역 실패 (원문 사용): {e}")
                 article.summary_ko = article.summary
     
-    return articles
+    return articles if articles else []
 
 
 @app.get("/api/news", response_model=List[NewsArticle])
