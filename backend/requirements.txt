@@ -7,4 +7,5 @@ pandas==2.2.3
 yfinance==0.2.48
 httpx==0.27.2
 feedparser==6.0.11
+ollama==0.3.1
 

@@ -1503,15 +1503,58 @@ tbody tr + tr {
     position: fixed;
     bottom: 2.5rem;
     right: 2.5rem;
-    width: clamp(260px, 22vw, 360px);
+    width: 60px;
+    height: 60px;
     background: var(--card);
-    border-radius: 24px;
+    border-radius: 50%;
     border: 2px solid var(--card-border);
     box-shadow: var(--shadow-soft);
     display: flex;
     flex-direction: column;
     overflow: hidden;
     z-index: 999;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    cursor: pointer;
+}
+
+.chat-widget:hover,
+.chat-widget:not(.collapsed) {
+    width: clamp(260px, 22vw, 360px);
+    height: auto;
+    border-radius: 24px;
+    cursor: default;
+}
+
+.chat-widget:not(:hover).collapsed .chat-widget__body,
+.chat-widget:not(:hover).collapsed .chat-widget__form {
+    display: none;
+}
+
+.chat-widget:not(:hover):not(.expanded) .chat-widget__body,
+.chat-widget:not(:hover):not(.expanded) .chat-widget__form {
+    display: none;
+}
+
+.chat-widget:not(:hover):not(.expanded) .chat-widget__header {
+    justify-content: center;
+    padding: 0;
+    min-height: 60px;
+}
+
+.chat-widget:not(:hover):not(.expanded) .chat-widget__title,
+.chat-widget:not(:hover):not(.expanded) .chat-widget__subtitle,
+.chat-widget:not(:hover):not(.expanded) .chat-widget__toggle {
+    display: none;
+}
+
+.chat-widget:not(:hover):not(.expanded) .chat-widget__header::after {
+    content: "💬";
+    font-size: 1.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
 }
 
 .chat-widget__header {
@@ -2697,10 +2740,17 @@ tbody tr + tr {
     }
 
     .chat-widget {
-        width: calc(100vw - 2rem);
-        max-width: 360px;
+        width: 60px;
+        height: 60px;
         right: 1rem;
         bottom: 1rem;
+    }
+    
+    .chat-widget.expanded,
+    .chat-widget:not(.collapsed) {
+        width: calc(100vw - 2rem);
+        max-width: 360px;
+        height: auto;
     }
 
     .chat-widget__header {
@@ -2869,9 +2919,16 @@ tbody tr + tr {
     }
 
     .chat-widget {
-        width: calc(100vw - 1rem);
+        width: 60px;
+        height: 60px;
         right: 0.5rem;
         bottom: 0.5rem;
+    }
+    
+    .chat-widget.expanded,
+    .chat-widget:not(.collapsed) {
+        width: calc(100vw - 1rem);
+        height: auto;
     }
 
     .card-grid .card .news-image {
@@ -3595,6 +3652,58 @@ body:has(#community) main {
 
 .analysis-btn-text {
     font-size: 1.3rem;
+}
+
+.help-btn {
+    margin-top: 0.75rem;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, var(--primary) 0%, #3ab8e8 100%);
+    border: none;
+    border-radius: 12px;
+    color: #ffffff;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    width: 100%;
+    text-align: center;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(74, 201, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.help-btn::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.2);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.help-btn:hover::before {
+    width: 300px;
+    height: 300px;
+}
+
+.help-btn:hover {
+    background: linear-gradient(135deg, #3ab8e8 0%, var(--primary) 100%);
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(74, 201, 255, 0.4);
+}
+
+.help-btn:active {
+    transform: translateY(-1px);
+    box-shadow: 0 3px 10px rgba(74, 201, 255, 0.3);
+}
+
+.help-btn span {
+    position: relative;
+    z-index: 1;
 }
 
 .help-icon-wrapper {

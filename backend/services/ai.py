@@ -1,9 +1,14 @@
 """
 AI utility functions for the Breaking Share homepage.
 
-This module exposes two primary helpers:
-1. summarize_headline: uses a Korean text summarization transformer pipeline.
-2. rank_recommendations: scores stock candidates based on simple weighted factors.
+This module implements Local LLM functionality using Hugging Face transformers:
+1. summarize_headline: uses a Korean text summarization transformer pipeline (Local LLM).
+   - Model: lcw99/t5-base-korean-text-summary
+   - Runs locally on CPU/GPU without external API calls
+2. translate_to_korean: uses translation models for English→Korean translation (Local LLM).
+   - Model: facebook/mbart-large-50-many-to-many-mmt
+   - Falls back to API-based translation if models unavailable
+3. rank_recommendations: scores stock candidates based on simple weighted factors.
 """
 
 from __future__ import annotations
@@ -93,7 +98,11 @@ def _get_translator():
 
 def summarize_headline(text: str, max_tokens: int = _DEFAULT_MAX_TOKENS) -> str:
     """
-    Summarize a Korean headline or paragraph into a concise briefing.
+    Summarize a Korean headline or paragraph using Local LLM (transformers).
+    
+    This function uses a locally-running transformer model (lcw99/t5-base-korean-text-summary)
+    to generate summaries without making external API calls. The model runs on the local
+    machine's CPU or GPU.
 
     Args:
         text: Raw news headline or paragraph.
@@ -101,6 +110,10 @@ def summarize_headline(text: str, max_tokens: int = _DEFAULT_MAX_TOKENS) -> str:
 
     Returns:
         A summarized string in Korean. Returns original text if transformers unavailable.
+        
+    Note:
+        This is a Local LLM implementation - no external API calls are made.
+        The model is loaded once and cached for subsequent calls.
     """
     if not text:
         return ""

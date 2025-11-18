@@ -20,6 +20,14 @@ from pydantic import BaseModel, Field
 
 from services.ai import rank_recommendations, summarize_headline, translate_to_korean
 
+# Ollama 클라이언트 (선택적)
+try:
+    import ollama
+    OLLAMA_AVAILABLE = True
+except ImportError:
+    OLLAMA_AVAILABLE = False
+    logger.warning("ollama not available, chatbot will use fallback")
+
 logger = logging.getLogger(__name__)
 
 app = FastAPI(
@@ -49,6 +57,25 @@ class SummarizeRequest(BaseModel):
 
 class SummarizeResponse(BaseModel):
     summary: str
+
+
+class ChatRequest(BaseModel):
+    message: str = Field(..., description="사용자 메시지")
+    include_market: bool = Field(True, description="시장 데이터 포함 여부")
+    include_news: bool = Field(True, description="뉴스 데이터 포함 여부")
+    max_news: int = Field(3, ge=0, le=10, description="포함할 최대 뉴스 개수")
+
+
+class ChatSource(BaseModel):
+    type: str  # "news", "market", "local_llm"
+    title: Optional[str] = None
+    url: Optional[str] = None
+    content: Optional[str] = None
+
+
+class ChatResponse(BaseModel):
+    reply: str
+    sources: List[ChatSource] = Field(default_factory=list)
 
 
 class RecommendationRequest(BaseModel):
@@ -131,6 +158,176 @@ def summarize_news(payload: SummarizeRequest) -> SummarizeResponse:
         return SummarizeResponse(summary=summary)
     except Exception as exc:  # noqa: BLE001
         raise HTTPException(status_code=500, detail=str(exc)) from exc
+
+
+@app.post("/api/chat", response_model=ChatResponse)
+async def chat_with_llm(payload: ChatRequest) -> ChatResponse:
+    """
+    LLM API (Ollama)를 사용하여 챗봇 응답을 생성합니다.
+    Local LLM (transformers)을 사용하여 뉴스 요약도 함께 제공합니다.
+    """
+    sources: List[ChatSource] = []
+    context_parts = []
+    
+    # 1. 시장 데이터 수집 (요청된 경우)
+    market_info = ""
+    if payload.include_market:
+        try:
+            async with MARKET_CACHE_LOCK:
+                market_quotes = []
+                for symbol, name in MARKET_OVERVIEW_SYMBOLS[:3]:  # 주요 지수 3개만
+                    entry = MARKET_CACHE.get(symbol.upper())
+                    if entry:
+                        quote = entry["quote"]  # type: ignore[index]
+                        market_quotes.append(f"{name}: {quote.current:.2f} ({quote.percent:+.2f}%)")
+            
+            if market_quotes:
+                market_info = "주요 시장 지수:\n" + "\n".join(market_quotes)
+                sources.append(ChatSource(
+                    type="market",
+                    title="시장 데이터",
+                    content=market_info
+                ))
+        except Exception as e:
+            logger.warning(f"시장 데이터 수집 실패: {e}")
+    
+    # 2. 뉴스 데이터 수집 (요청된 경우) - AI 분석 질문일 때는 생략하여 속도 개선
+    news_info = ""
+    is_ai_analysis_question = "손절" in user_message or "익절" in user_message or "AI 분석" in user_message or "반복" in user_message
+    
+    if payload.include_news and not is_ai_analysis_question:
+        try:
+            articles = await _fetch_usa_news()[:payload.max_news]
+            if articles:
+                news_items = []
+                for article in articles:
+                    headline = article.headline_ko or article.headline
+                    # Local LLM을 사용하여 요약 (transformers) - 타임아웃 설정
+                    summary = article.summary_ko or article.summary
+                    if summary:
+                        try:
+                            # Local LLM으로 요약 생성 (빠른 응답을 위해 짧게)
+                            summary_short = summarize_headline(summary, max_tokens=30)
+                            news_items.append(f"- {headline}: {summary_short}")
+                        except Exception:
+                            news_items.append(f"- {headline}")
+                    else:
+                        news_items.append(f"- {headline}")
+                    
+                    sources.append(ChatSource(
+                        type="news",
+                        title=headline,
+                        url=article.url,
+                        content=summary or headline
+                    ))
+                
+                news_info = "최신 경제 뉴스:\n" + "\n".join(news_items)
+                sources.append(ChatSource(
+                    type="local_llm",
+                    title="Local LLM 요약",
+                    content="transformers를 사용하여 뉴스 요약 생성"
+                ))
+        except Exception as e:
+            logger.warning(f"뉴스 데이터 수집 실패: {e}")
+    
+    # 3. 컨텍스트 구성
+    context = ""
+    if market_info:
+        context += market_info + "\n\n"
+    if news_info:
+        context += news_info + "\n\n"
+    
+    # 4. LLM API (Ollama)를 사용하여 응답 생성
+    user_message = payload.message
+    
+    # AI 분석 기능에 대한 질문인지 확인 (이미 위에서 확인함)
+    ai_analysis_context = ""
+    if is_ai_analysis_question:
+        ai_analysis_context = """
+        
+TradeNote의 AI 분석 기능에 대한 정보:
+1. "손절 시 반복되는 문제점 찾기" 기능:
+   - 매매일지에서 손절한 거래의 '손절한 이유'를 분석합니다
+   - 자주 반복되는 패턴과 문제점을 찾아드립니다
+   - 최소 매매일지가 1개 이상 있어야 작동합니다
+   - 손절 사유를 기록하면 더 정확한 분석이 가능합니다
+   
+2. "익절 시 반복되는 좋은 습관 찾기" 기능:
+   - 매매일지에서 익절한 거래의 '익절한 이유'를 분석합니다
+   - 반복되는 좋은 습관과 패턴을 찾아드립니다
+   - 최소 매매일지가 1개 이상 있어야 작동합니다
+   - 익절 사유를 기록하면 더 정확한 분석이 가능합니다
+
+이 기능들은 사용자의 매매 패턴을 분석하여 개선점을 찾아주는 데 도움을 줍니다.
+"""
+    
+    system_prompt = """당신은 TradeNote의 AI 어시스턴트입니다. 주식 시장, 경제 뉴스, 그리고 TradeNote의 AI 분석 기능에 대해 도움을 주는 전문가입니다.
+사용자의 질문에 정확하고 도움이 되는 답변을 제공하세요.
+제공된 시장 데이터와 뉴스 정보를 활용하여 답변하세요.
+AI 분석 기능에 대한 질문이 있으면 상세하고 친절하게 설명해주세요."""
+    
+    prompt = f"{system_prompt}{ai_analysis_context}\n\n{context}사용자 질문: {user_message}\n\n답변:"
+    
+    reply = ""
+    try:
+        if OLLAMA_AVAILABLE:
+            # Ollama API 사용 (로컬 LLM API)
+            ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2:1b")  # 기본값: 작은 모델
+            try:
+                # 빠른 응답을 위해 타임아웃 설정 및 토큰 수 제한
+                response = ollama.chat(
+                    model=ollama_model,
+                    messages=[
+                        {"role": "system", "content": system_prompt + ai_analysis_context},
+                        {"role": "user", "content": f"{context}질문: {user_message}" if context else f"질문: {user_message}"}
+                    ],
+                    options={
+                        "temperature": 0.7,
+                        "num_predict": 200 if is_ai_analysis_question else 300,  # AI 분석 질문은 더 짧게
+                    }
+                )
+                reply = response.get("message", {}).get("content", "")
+                sources.append(ChatSource(
+                    type="local_llm",
+                    title="Ollama LLM API",
+                    content=f"모델: {ollama_model}"
+                ))
+            except Exception as e:
+                logger.warning(f"Ollama API 호출 실패: {e}, fallback 사용")
+                reply = _generate_fallback_reply(user_message, market_info, news_info)
+        else:
+            reply = _generate_fallback_reply(user_message, market_info, news_info)
+    except Exception as e:
+        logger.error(f"LLM 응답 생성 실패: {e}")
+        reply = _generate_fallback_reply(user_message, market_info, news_info)
+    
+    if not reply:
+        reply = "죄송합니다. 답변을 생성하지 못했습니다. 다시 시도해주세요."
+    
+    return ChatResponse(reply=reply, sources=sources)
+
+
+def _generate_fallback_reply(message: str, market_info: str, news_info: str) -> str:
+    """Ollama가 없을 때 사용하는 간단한 fallback 응답"""
+    reply_parts = []
+    
+    if "시장" in message or "지수" in message or "주가" in message:
+        if market_info:
+            reply_parts.append(market_info)
+        else:
+            reply_parts.append("시장 데이터를 가져올 수 없습니다.")
+    
+    if "뉴스" in message or "소식" in message:
+        if news_info:
+            reply_parts.append(news_info)
+        else:
+            reply_parts.append("뉴스 데이터를 가져올 수 없습니다.")
+    
+    if not reply_parts:
+        reply_parts.append(f"'{message}'에 대한 답변을 준비 중입니다. ")
+        reply_parts.append("더 자세한 정보를 원하시면 시장 데이터나 뉴스에 대해 물어보세요.")
+    
+    return "\n\n".join(reply_parts)
 
 
 @app.post("/api/recommendations", response_model=RecommendationResponse)

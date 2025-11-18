@@ -223,8 +223,9 @@ const initChatbot = () => {
             pending.textEl.textContent = reply;
             renderSources(pending.bubble, sources);
         } catch (error) {
+            console.error("챗봇 응답 오류:", error);
             pending.textEl.textContent =
-                error.message || "챗봇 응답을 생성하지 못했습니다. 잠시 후 다시 시도해주세요.";
+                error.message || `챗봇 응답을 생성하지 못했습니다. (${error.status || '연결 실패'}) 잠시 후 다시 시도해주세요.`;
         } finally {
             if (submitButton) {
                 submitButton.disabled = false;
@@ -236,46 +237,79 @@ const initChatbot = () => {
 
     chatToggle.addEventListener("click", () => {
         const collapsed = widget.classList.toggle("collapsed");
+        widget.classList.toggle("expanded", !collapsed);
         chatToggle.textContent = collapsed ? "+" : "ㅡ";
         chatToggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
+    });
+    
+    // hover 시 확장 표시
+    widget.addEventListener("mouseenter", () => {
+        widget.classList.add("expanded");
+    });
+    
+    widget.addEventListener("mouseleave", () => {
+        if (widget.classList.contains("collapsed")) {
+            widget.classList.remove("expanded");
+        }
     });
 };
 
 const requestJSON = async (url, options = {}) => {
-    const response = await fetch(url, {
-        credentials: "include",
-        headers: { "Content-Type": "application/json", ...(options.headers ?? {}) },
-        ...options,
-    });
+    try {
+        console.log("API 요청:", url);
+        const response = await fetch(url, {
+            credentials: "include",
+            headers: { "Content-Type": "application/json", ...(options.headers ?? {}) },
+            ...options,
+        });
 
-    let data = null;
-    const text = await response.text();
-    if (text) {
-        try {
-            data = JSON.parse(text);
-        } catch (error) {
-            data = { message: text };
+        let data = null;
+        const text = await response.text();
+        if (text) {
+            try {
+                data = JSON.parse(text);
+            } catch (error) {
+                data = { message: text };
+            }
         }
-    }
 
-    if (!response.ok) {
-        const message = data?.message || data?.detail || "요청 처리에 실패했습니다.";
-        throw new Error(message);
-    }
+        if (!response.ok) {
+            const message = data?.message || data?.detail || `HTTP ${response.status}`;
+            const error = new Error(message);
+            error.status = response.status;
+            error.data = data;
+            console.error("API 오류:", error);
+            throw error;
+        }
 
-    return data;
+        return data;
+    } catch (error) {
+        // 네트워크 오류 처리
+        if (error.name === 'TypeError' && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
+            const networkError = new Error(`서버에 연결할 수 없습니다: ${url}`);
+            networkError.status = 'NETWORK_ERROR';
+            networkError.originalError = error;
+            console.error("네트워크 오류:", networkError);
+            throw networkError;
+        }
+        throw error;
+    }
 };
 
-const requestChatbotReply = (message) =>
-    requestJSON(`${API_BASE}/api/chat`, {
+const requestChatbotReply = (message) => {
+    // AI 분석 관련 질문인지 확인
+    const isAIAnalysisQuestion = /손절|익절|AI 분석|반복|문제점|습관/.test(message);
+    
+    return requestJSON(`${API_BASE}/api/chat`, {
         method: "POST",
         body: JSON.stringify({
             message,
-            include_market: true,
-            include_news: true,
+            include_market: !isAIAnalysisQuestion,  // AI 분석 질문일 때는 시장 데이터 생략
+            include_news: !isAIAnalysisQuestion,    // AI 분석 질문일 때는 뉴스 데이터 생략
             max_news: 3,
         }),
     });
+};
 
 const registerUser = (payload) =>
     requestJSON(`${AUTH_API_BASE}/api/auth/register`, {
@@ -2088,6 +2122,99 @@ const initAIAnalysis = () => {
         });
     }
     
+    // 도움말 버튼 클릭 - 챗봇이 자동으로 설명
+    const lossHelpBtn = document.getElementById("loss-help-btn");
+    const profitHelpBtn = document.getElementById("profit-help-btn");
+    
+    const askChatbotAboutFeature = async (featureType) => {
+        // 챗봇이 열려있지 않으면 열기
+        const chatbot = document.getElementById("chatbot");
+        const chatBody = document.getElementById("chat-body");
+        const chatInput = document.getElementById("chat-input");
+        
+        if (!chatbot || !chatBody || !chatInput) {
+            alert("챗봇을 사용할 수 없습니다. 페이지를 새로고침해주세요.");
+            return;
+        }
+        
+        // 챗봇 열기
+        chatbot.classList.remove("collapsed");
+        chatbot.classList.add("expanded");
+        
+        // 질문 생성
+        let question = "";
+        if (featureType === "loss") {
+            question = "손절 시 반복되는 문제점 찾기 기능에 대해 자세히 설명해주세요. 이 기능이 어떻게 작동하고, 어떤 데이터가 필요한지 알려주세요.";
+        } else if (featureType === "profit") {
+            question = "익절 시 반복되는 좋은 습관 찾기 기능에 대해 자세히 설명해주세요. 이 기능이 어떻게 작동하고, 어떤 데이터가 필요한지 알려주세요.";
+        }
+        
+        // 사용자 메시지 추가
+        const userMessage = document.createElement("div");
+        userMessage.className = "chat-message user";
+        const userText = document.createElement("p");
+        userText.className = "chat-message__text";
+        userText.textContent = question;
+        userMessage.appendChild(userText);
+        chatBody.appendChild(userMessage);
+        chatBody.scrollTop = chatBody.scrollHeight;
+        
+        // 챗봇 응답 요청
+        const pending = document.createElement("div");
+        pending.className = "chat-message bot";
+        const pendingText = document.createElement("p");
+        pendingText.className = "chat-message__text";
+        pendingText.textContent = "답변을 준비하고 있어요...";
+        pending.appendChild(pendingText);
+        chatBody.appendChild(pending);
+        chatBody.scrollTop = chatBody.scrollHeight;
+        
+        try {
+            const { reply, sources } = await requestChatbotReply(question);
+            pendingText.textContent = reply;
+            
+            // 소스 표시 (있는 경우)
+            if (sources && sources.length > 0) {
+                const sourcesDiv = document.createElement("div");
+                sourcesDiv.className = "chat-message__sources";
+                sources.forEach((source, index) => {
+                    if (source.url) {
+                        const link = document.createElement("a");
+                        link.href = source.url;
+                        link.target = "_blank";
+                        link.rel = "noopener noreferrer";
+                        link.textContent = `출처 ${index + 1}`;
+                        sourcesDiv.appendChild(link);
+                    }
+                });
+                if (sourcesDiv.childNodes.length) {
+                    pending.appendChild(sourcesDiv);
+                }
+            }
+        } catch (error) {
+            console.error("챗봇 응답 오류:", error);
+            const errorMsg = error.message || `챗봇 응답을 생성하지 못했습니다. (${error.status || '연결 실패'})`;
+            const helpMsg = `\n\n백엔드 서버가 실행 중인지 확인해주세요:\n- FastAPI: ${API_BASE}/api/chat\n- 브라우저 콘솔에서 자세한 오류를 확인하세요.`;
+            pendingText.textContent = errorMsg + helpMsg;
+        }
+        
+        chatBody.scrollTop = chatBody.scrollHeight;
+    };
+    
+    if (lossHelpBtn) {
+        lossHelpBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            askChatbotAboutFeature("loss");
+        });
+    }
+    
+    if (profitHelpBtn) {
+        profitHelpBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            askChatbotAboutFeature("profit");
+        });
+    }
+    
     // 뒤로가기 버튼
     const backFromLoss = document.getElementById("back-from-loss");
     const backFromProfit = document.getElementById("back-from-profit");
@@ -2989,6 +3116,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // AI 분석 페이지 초기화
     if (window.location.pathname.includes("ai-analysis.html")) {
         initAIAnalysis();
+        initChatbot(); // 챗봇 초기화
     }
     
     // 내 정보 페이지 초기화

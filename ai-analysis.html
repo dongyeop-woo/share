@@ -57,17 +57,17 @@
                         <button type="button" class="analysis-btn" id="loss-analysis-btn">
                             <span class="analysis-btn-text">손절 시 반복되는 문제점 찾기</span>
                         </button>
-                        <div class="help-icon-wrapper">
-                            <span class="help-icon" data-tooltip="손절한 거래의 '손절한 이유'를 분석하여 자주 반복되는 패턴과 문제점을 찾아드립니다. 매매일지에서 손절 거래의 손절 사유를 기록하면 더 정확한 분석이 가능합니다. 최소 매매일지가 1개 이상은 있어야 작동합니다.">?</span>
-                        </div>
+                        <button type="button" class="help-btn" id="loss-help-btn" title="이 기능에 대해 챗봇에게 물어보기">
+                            <span>💬 도움말</span>
+                        </button>
                     </div>
                     <div class="analysis-btn-wrapper">
                         <button type="button" class="analysis-btn" id="profit-analysis-btn">
                             <span class="analysis-btn-text">익절 시 반복되는 좋은 습관 찾기</span>
                         </button>
-                        <div class="help-icon-wrapper">
-                            <span class="help-icon" data-tooltip="익절한 거래의 '익절한 이유'를 분석하여 반복되는 좋은 습관과 패턴을 찾아드립니다. 매매일지에서 익절 거래의 익절 사유를 기록하면 더 정확한 분석이 가능합니다. 최소 매매일지가 1개 이상은 있어야 작동합니다.">?</span>
-                        </div>
+                        <button type="button" class="help-btn" id="profit-help-btn" title="이 기능에 대해 챗봇에게 물어보기">
+                            <span>💬 도움말</span>
+                        </button>
                     </div>
                 </div>
 
@@ -109,6 +109,26 @@
         <a href="calendar.html" class="bottom-nav__item">캘린더</a>
         <a href="me.html" class="bottom-nav__item">내정보</a>
     </nav>
+
+    <!-- 챗봇 위젯 -->
+    <div class="chat-widget" id="chatbot">
+        <div class="chat-widget__header">
+            <div>
+                <h3 class="chat-widget__title">AI 어시스턴트</h3>
+                <p class="chat-widget__subtitle">AI 분석 기능에 대해 물어보세요</p>
+            </div>
+            <button type="button" class="chat-widget__toggle" id="chat-toggle" aria-label="챗봇 접기/펼치기">ㅡ</button>
+        </div>
+        <div class="chat-widget__body" id="chat-body">
+            <div class="chat-message bot">
+                <p class="chat-message__text">안녕하세요! AI 분석 기능에 대해 궁금한 점이 있으시면 언제든 물어보세요. 손절/익절 패턴 분석에 대해 설명해드릴 수 있습니다.</p>
+            </div>
+        </div>
+        <form class="chat-widget__form" id="chat-form">
+            <input type="text" class="chat-widget__input" id="chat-input" placeholder="메시지를 입력하세요..." autocomplete="off">
+            <button type="submit">전송</button>
+        </form>
+    </div>
 </body>
 </html>
 
