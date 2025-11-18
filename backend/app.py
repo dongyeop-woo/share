@@ -277,16 +277,22 @@ AI 분석 기능에 대한 질문이 있으면 상세하고 친절하게 설명�
             ollama_model = os.getenv("OLLAMA_MODEL", "llama3.2:1b")  # 기본값: 작은 모델
             try:
                 # 빠른 응답을 위해 타임아웃 설정 및 토큰 수 제한
-                response = ollama.chat(
-                    model=ollama_model,
-                    messages=[
-                        {"role": "system", "content": system_prompt + ai_analysis_context},
-                        {"role": "user", "content": f"{context}질문: {user_message}" if context else f"질문: {user_message}"}
-                    ],
-                    options={
-                        "temperature": 0.7,
-                        "num_predict": 200 if is_ai_analysis_question else 300,  # AI 분석 질문은 더 짧게
-                    }
+                # 타임아웃을 5초로 제한하여 빠른 응답 보장
+                import asyncio
+                response = await asyncio.wait_for(
+                    asyncio.to_thread(
+                        ollama.chat,
+                        model=ollama_model,
+                        messages=[
+                            {"role": "system", "content": system_prompt + ai_analysis_context},
+                            {"role": "user", "content": f"{context}질문: {user_message}" if context else f"질문: {user_message}"}
+                        ],
+                        options={
+                            "temperature": 0.7,
+                            "num_predict": 150 if is_ai_analysis_question else 200,  # 더 짧게 생성하여 속도 향상
+                        }
+                    ),
+                    timeout=5.0  # 5초 타임아웃
                 )
                 reply = response.get("message", {}).get("content", "")
                 sources.append(ChatSource(
@@ -294,10 +300,14 @@ AI 분석 기능에 대한 질문이 있으면 상세하고 친절하게 설명�
                     title="Ollama LLM API",
                     content=f"모델: {ollama_model}"
                 ))
+            except asyncio.TimeoutError:
+                logger.warning("Ollama API 타임아웃, fallback 사용")
+                reply = _generate_fallback_reply(user_message, market_info, news_info)
             except Exception as e:
                 logger.warning(f"Ollama API 호출 실패: {e}, fallback 사용")
                 reply = _generate_fallback_reply(user_message, market_info, news_info)
         else:
+            # Ollama가 없으면 즉시 fallback 사용
             reply = _generate_fallback_reply(user_message, market_info, news_info)
     except Exception as e:
         logger.error(f"LLM 응답 생성 실패: {e}")
@@ -310,10 +320,10 @@ AI 분석 기능에 대한 질문이 있으면 상세하고 친절하게 설명�
 
 
 def _generate_fallback_reply(message: str, market_info: str, news_info: str) -> str:
-    """Ollama가 없을 때 사용하는 간단한 fallback 응답"""
+    """Ollama가 없을 때 사용하는 빠른 fallback 응답"""
     reply_parts = []
     
-    # AI 분석 기능에 대한 질문 처리
+    # AI 분석 기능에 대한 질문 처리 (가장 빠르게 응답)
     if "손절" in message or "익절" in message or "AI 분석" in message or "반복" in message or "문제점" in message or "습관" in message:
         if "손절" in message or "문제점" in message:
             reply_parts.append("""손절 시 반복되는 문제점 찾기 기능에 대해 설명드리겠습니다.
@@ -419,7 +429,7 @@ def generate_recommendations(payload: RecommendationRequest) -> RecommendationRe
             earnings = yf.Ticker(ticker).get_earnings_dates(limit=4)
             revenue_growth = 0.0
             eps_growth = 0.0
-            if earnings is not None and not earnings.empty:
+            if earnings is not None and hasattr(earnings, 'empty') and not earnings.empty:
                 earnings = earnings.sort_index()
                 if "Revenue" in earnings.columns and len(earnings["Revenue"].dropna()) >= 2:
                     revenue_growth = (
