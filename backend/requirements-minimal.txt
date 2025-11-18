@@ -1,0 +1,14 @@
+# 최소 필수 패키지 (transformers/torch 제외)
+fastapi==0.115.4
+uvicorn[standard]==0.32.0
+numpy==1.26.4
+pandas==2.2.3
+yfinance==0.2.48
+httpx==0.27.2
+feedparser==6.0.11
+ollama==0.3.1
+
+# transformers와 torch는 선택적 (Local LLM 사용 시에만 필요)
+# transformers==4.46.1
+# torch==2.9.0
+

@@ -20,6 +20,8 @@ from pydantic import BaseModel, Field
 
 from services.ai import rank_recommendations, summarize_headline, translate_to_korean
 
+logger = logging.getLogger(__name__)
+
 # Ollama 클라이언트 (선택적)
 try:
     import ollama
@@ -27,8 +29,6 @@ try:
 except ImportError:
     OLLAMA_AVAILABLE = False
     logger.warning("ollama not available, chatbot will use fallback")
-
-logger = logging.getLogger(__name__)
 
 app = FastAPI(
     title="Breaking Share AI API",
@@ -193,11 +193,13 @@ async def chat_with_llm(payload: ChatRequest) -> ChatResponse:
     
     # 2. 뉴스 데이터 수집 (요청된 경우) - AI 분석 질문일 때는 생략하여 속도 개선
     news_info = ""
+    user_message = payload.message  # 먼저 정의
     is_ai_analysis_question = "손절" in user_message or "익절" in user_message or "AI 분석" in user_message or "반복" in user_message
     
     if payload.include_news and not is_ai_analysis_question:
         try:
-            articles = await _fetch_usa_news()[:payload.max_news]
+            articles_list = await _fetch_usa_news()
+            articles = articles_list[:payload.max_news] if isinstance(articles_list, list) else list(articles_list)[:payload.max_news]
             if articles:
                 news_items = []
                 for article in articles:
@@ -238,7 +240,7 @@ async def chat_with_llm(payload: ChatRequest) -> ChatResponse:
         context += news_info + "\n\n"
     
     # 4. LLM API (Ollama)를 사용하여 응답 생성
-    user_message = payload.message
+    # user_message는 이미 위에서 정의됨
     
     # AI 분석 기능에 대한 질문인지 확인 (이미 위에서 확인함)
     ai_analysis_context = ""
@@ -311,21 +313,76 @@ def _generate_fallback_reply(message: str, market_info: str, news_info: str) -> 
     """Ollama가 없을 때 사용하는 간단한 fallback 응답"""
     reply_parts = []
     
+    # AI 분석 기능에 대한 질문 처리
+    if "손절" in message or "익절" in message or "AI 분석" in message or "반복" in message or "문제점" in message or "습관" in message:
+        if "손절" in message or "문제점" in message:
+            reply_parts.append("""손절 시 반복되는 문제점 찾기 기능에 대해 설명드리겠습니다.
+
+📊 **기능 설명:**
+이 기능은 매매일지에서 손절한 거래의 '손절한 이유'를 분석하여 자주 반복되는 패턴과 문제점을 찾아드립니다.
+
+🔧 **사용 방법:**
+1. 매매일지에서 손절 거래를 기록하세요
+2. 각 거래의 '손절한 이유'를 상세히 기록하세요
+3. AI 분석 페이지에서 '손절 시 반복되는 문제점 찾기' 버튼을 클릭하세요
+
+📝 **필요한 데이터:**
+- 최소 매매일지 1개 이상
+- 손절 거래의 손절 사유 기록
+
+💡 **활용 방법:**
+반복되는 문제점을 발견하면, 해당 문제를 해결하기 위한 구체적인 행동 계획을 수립하세요. 매매 전 체크리스트를 만들어 실수를 방지할 수 있습니다.""")
+        elif "익절" in message or "습관" in message:
+            reply_parts.append("""익절 시 반복되는 좋은 습관 찾기 기능에 대해 설명드리겠습니다.
+
+📊 **기능 설명:**
+이 기능은 매매일지에서 익절한 거래의 '익절한 이유'를 분석하여 반복되는 좋은 습관과 패턴을 찾아드립니다.
+
+🔧 **사용 방법:**
+1. 매매일지에서 익절 거래를 기록하세요
+2. 각 거래의 '익절한 이유'를 상세히 기록하세요
+3. AI 분석 페이지에서 '익절 시 반복되는 좋은 습관 찾기' 버튼을 클릭하세요
+
+📝 **필요한 데이터:**
+- 최소 매매일지 1개 이상
+- 익절 거래의 익절 사유 기록
+
+💡 **활용 방법:**
+반복되는 좋은 습관을 발견하면, 이를 더욱 체계화하고 일관되게 적용하세요. 성공 패턴을 강화하여 승률을 높일 수 있습니다.""")
+        else:
+            reply_parts.append("""AI 분석 기능에 대해 설명드리겠습니다.
+
+TradeNote의 AI 분석 기능은 두 가지가 있습니다:
+
+1️⃣ **손절 시 반복되는 문제점 찾기**
+   - 손절 거래의 패턴을 분석하여 개선점을 찾습니다
+   - 매매일지에서 손절 사유를 기록하면 더 정확한 분석이 가능합니다
+
+2️⃣ **익절 시 반복되는 좋은 습관 찾기**
+   - 익절 거래의 패턴을 분석하여 성공 요인을 찾습니다
+   - 매매일지에서 익절 사유를 기록하면 더 정확한 분석이 가능합니다
+
+💡 **팁:** 더 자세한 정보를 원하시면 각 기능의 도움말 버튼(💬)을 클릭하세요.""")
+        return "\n\n".join(reply_parts)
+    
+    # 시장 데이터 관련 질문
     if "시장" in message or "지수" in message or "주가" in message:
         if market_info:
             reply_parts.append(market_info)
         else:
             reply_parts.append("시장 데이터를 가져올 수 없습니다.")
     
+    # 뉴스 관련 질문
     if "뉴스" in message or "소식" in message:
         if news_info:
             reply_parts.append(news_info)
         else:
             reply_parts.append("뉴스 데이터를 가져올 수 없습니다.")
     
+    # 기본 응답
     if not reply_parts:
-        reply_parts.append(f"'{message}'에 대한 답변을 준비 중입니다. ")
-        reply_parts.append("더 자세한 정보를 원하시면 시장 데이터나 뉴스에 대해 물어보세요.")
+        reply_parts.append(f"'{message}'에 대한 답변을 준비 중입니다.")
+        reply_parts.append("더 자세한 정보를 원하시면 시장 데이터, 뉴스, 또는 AI 분석 기능에 대해 물어보세요.")
     
     return "\n\n".join(reply_parts)
 
