@@ -185,14 +185,31 @@ const initChatbot = () => {
         }
         const list = document.createElement("div");
         list.className = "chat-message__sources";
-        sources.slice(0, 5).forEach((url, index) => {
-            if (!url) return;
-            const link = document.createElement("a");
-            link.href = url;
-            link.target = "_blank";
-            link.rel = "noopener noreferrer";
-            link.textContent = `출처 ${index + 1}`;
-            list.appendChild(link);
+        sources.slice(0, 5).forEach((source, index) => {
+            // source가 객체인 경우 (ChatSource)
+            if (typeof source === 'object' && source !== null) {
+                if (source.url) {
+                    const link = document.createElement("a");
+                    link.href = source.url;
+                    link.target = "_blank";
+                    link.rel = "noopener noreferrer";
+                    link.textContent = source.title || `출처 ${index + 1}`;
+                    list.appendChild(link);
+                } else if (source.title) {
+                    const span = document.createElement("span");
+                    span.textContent = source.title;
+                    list.appendChild(span);
+                }
+            } 
+            // source가 문자열(URL)인 경우
+            else if (typeof source === 'string' && source) {
+                const link = document.createElement("a");
+                link.href = source;
+                link.target = "_blank";
+                link.rel = "noopener noreferrer";
+                link.textContent = `출처 ${index + 1}`;
+                list.appendChild(link);
+            }
         });
         if (list.childNodes.length) {
             container.appendChild(list);
