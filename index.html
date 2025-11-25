@@ -4,13 +4,23 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
-    <title>TradeNote | 주식 인사이트 허브</title>
+    <title>TradeNote | 매매일지</title>
     <link rel="stylesheet" href="assets/styles.css">
     <script src="assets/app.js" defer></script>
+    <script>
+        // 기본 페이지는 대시보드이나, view=journal 파라미터가 있으면 매매일지 페이지를 유지
+        (function () {
+            const params = new URLSearchParams(window.location.search);
+            const stayOnJournal = params.get("view") === "journal";
+            if (!stayOnJournal) {
+                window.location.replace("dashboard.html");
+            }
+        })();
+    </script>
 </head>
 <body>
     <header class="site-header">
-        <a href="index.html" class="brand" style="text-decoration: none; color: inherit;">
+        <a href="dashboard.html" class="brand" style="text-decoration: none; color: inherit;">
             <span class="brand-mark" aria-hidden="true">📈</span>
             <div>
                 <p class="brand-name">TradeNote</p>
@@ -26,24 +36,32 @@
 
     <!-- 데스크탑 왼쪽 사이드 카테고리 -->
     <nav class="side-nav" aria-label="주요 카테고리">
-        <a href="index.html" class="side-nav__item">매매일지</a>
-        <a href="news.html" class="side-nav__item">뉴스</a>
-        <a href="community.html" class="side-nav__item">커뮤니티</a>
-        <a href="ai-analysis.html" class="side-nav__item">AI 분석</a>
-        <a href="calendar.html" class="side-nav__item">캘린더</a>
-        <a href="me.html" class="side-nav__item">내정보</a>
+        <a href="dashboard.html" class="side-nav__item">대시보드</a>
+        <a href="index.html?view=journal" class="side-nav__item">매매일지</a>
     </nav>
 
-    <main>
-        <section id="trading" class="content-section">
-            <header class="section-header">
-                <h2>매매내역 관리</h2>
-                <p>매매 내역을 기록하고 분석하세요.</p>
+    <main class="toss-main">
+        <div class="toss-dashboard-container">
+            <!-- 헤더 (매매내역 관리 + 내정보 아이콘) -->
+            <header class="dashboard-header">
+                <div class="stock-info-header">
+                    <h2 style="margin: 0; font-size: 28px; font-weight: 700; color: #333;">매매내역 관리</h2>
+                </div>
+                <div class="header-controls">
+                    <button type="button" class="profile-btn" id="open-profile-modal-btn" aria-label="내 정보">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 10C12.7614 10 15 7.76142 15 5C15 2.23858 12.7614 0 10 0C7.23858 0 5 2.23858 5 5C5 7.76142 7.23858 10 10 10Z" fill="#6B7280"/>
+                            <path d="M10 12C5.58172 12 2 14.6863 2 18V20H18V18C18 14.6863 14.4183 12 10 12Z" fill="#6B7280"/>
+                        </svg>
+                    </button>
+                </div>
             </header>
 
-            <div class="trading-grid">
-                <!-- 첫 번째 줄: 오늘 매매내역 | 이번 달 매매내역 -->
-                <div class="trading-section">
+            <section id="trading" class="content-section">
+
+                <div class="trading-grid">
+                <!-- 첫 번째 줄: 오늘 매매내역 | 이번 달 매매내역 | 습관 분석 -->
+                <div class="trading-section trading-section-today">
                     <div class="trading-section-header">
                         <h3>오늘 매매내역</h3>
                         <button type="button" class="new-btn" data-modal="today-trading-modal">
@@ -56,7 +74,7 @@
                     </div>
                 </div>
 
-                <div class="trading-section">
+                <div class="trading-section trading-section-month">
                     <div class="trading-section-header">
                         <h3>이번 달 매매내역</h3>
                         <button type="button" class="new-btn" data-modal="month-trading-modal">
@@ -69,14 +87,40 @@
                     </div>
                 </div>
 
+                <div class="trading-section trading-section-habit">
+                    <div class="trading-section-header">
+                        <h3>습관 분석</h3>
+                        <div class="habit-period-selector">
+                            <button class="period-dropdown-btn" id="period-dropdown-btn">
+                                <span id="period-selected-text">7일</span>
+                                <span class="dropdown-arrow">▼</span>
+                            </button>
+                            <div class="period-dropdown-menu" id="period-dropdown-menu">
+                                <div class="period-option" data-period="7">7일</div>
+                                <div class="period-option" data-period="30">30일</div>
+                                <div class="period-option" data-period="90">90일</div>
+                                <div class="period-option" data-period="all">모두</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="trading-section-content">
+                        <div class="habit-analysis-container">
+                            <h4 style="margin: 0 0 0.5rem; font-size: 0.9rem; color: var(--positive);">수익을 얻을 때 반복하는 습관</h4>
+                            <div id="profit-habit-analysis" class="habit-analysis-content"></div>
+                            <h4 style="margin: 1rem 0 0.5rem; font-size: 0.9rem; color: var(--negative);">손실을 할 때 반복되는 습관</h4>
+                            <div id="loss-habit-analysis" class="habit-analysis-content"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- 두 번째 줄: 총 수익금 | 총 매매내역 -->
-                <div class="trading-section">
+                <div class="trading-section trading-section-profit">
                     <div class="trading-section-header">
                         <h3>총 수익금</h3>
                     </div>
                     <div class="trading-section-content">
                         <div class="profit-charts-grid">
-                            <!-- 첫 번째 줄: 오늘, 이번 달 -->
+                            <!-- 한 줄: 오늘, 이번 달, 전체 -->
                             <div class="profit-charts-row">
                                 <!-- 오늘 총 수익금 그래프 -->
                                 <div class="profit-chart-wrapper">
@@ -92,7 +136,12 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="profit-legend" id="profit-legend-today"></div>
+                                    <div class="profit-legend-container">
+                                        <button type="button" class="more-detail-btn" id="profit-detail-btn-today" style="display: none;">
+                                            <span>더보기</span>
+                                        </button>
+                                        <div class="profit-legend" id="profit-legend-today"></div>
+                                    </div>
                                 </div>
                                 
                                 <!-- 이번 달 총 수익금 그래프 -->
@@ -109,12 +158,14 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="profit-legend" id="profit-legend-month"></div>
+                                    <div class="profit-legend-container">
+                                        <button type="button" class="more-detail-btn" id="profit-detail-btn-month" style="display: none;">
+                                            <span>더보기</span>
+                                        </button>
+                                        <div class="profit-legend" id="profit-legend-month"></div>
+                                    </div>
                                 </div>
-                            </div>
-                            
-                            <!-- 두 번째 줄: 전체 -->
-                            <div class="profit-charts-row profit-charts-row-center">
+                                
                                 <!-- 전체 총 수익금 그래프 -->
                                 <div class="profit-chart-wrapper">
                                     <div class="profit-chart" id="profit-chart-all">
@@ -129,14 +180,19 @@
                                             </div>
                                         </div>
                                     </div>
-                                    <div class="profit-legend" id="profit-legend-all"></div>
+                                    <div class="profit-legend-container">
+                                        <button type="button" class="more-detail-btn" id="profit-detail-btn-all" style="display: none;">
+                                            <span>더보기</span>
+                                        </button>
+                                        <div class="profit-legend" id="profit-legend-all"></div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="trading-section">
+                <div class="trading-section trading-section-all">
                     <div class="trading-section-header">
                         <h3>총 매매내역</h3>
                     </div>
@@ -145,7 +201,60 @@
                         <button type="button" class="more-btn" data-target="all-trading-list" style="display: none;">더보기</button>
                     </div>
                 </div>
+
+                <div class="trading-section trading-section-calendar">
+                    <div class="trading-section-header">
+                        <h3>캘린더</h3>
+                    </div>
+                    <div class="trading-section-content">
+                        <div class="calendar-container" id="trading-calendar-container">
+                            <div class="calendar-header">
+                                <button type="button" class="calendar-nav-btn" id="trading-prev-month">‹</button>
+                                <h3 id="trading-calendar-month-year"></h3>
+                                <button type="button" class="calendar-nav-btn" id="trading-next-month">›</button>
+                            </div>
+                            <div class="calendar-weekdays">
+                                <div class="calendar-weekday">일</div>
+                                <div class="calendar-weekday">월</div>
+                                <div class="calendar-weekday">화</div>
+                                <div class="calendar-weekday">수</div>
+                                <div class="calendar-weekday">목</div>
+                                <div class="calendar-weekday">금</div>
+                                <div class="calendar-weekday">토</div>
+                            </div>
+                            <div class="calendar-days" id="trading-calendar-days"></div>
+                        </div>
+                    </div>
+                </div>
+                </div>
+            </section>
+            
+            <!-- 종목별 수익금 상세 모달 -->
+            <div class="side-modal-overlay" id="profit-detail-modal">
+                <div class="side-modal">
+                    <div class="side-modal-header">
+                        <h3 id="profit-detail-title">종목별 수익금</h3>
+                        <button type="button" class="side-modal-close" id="close-profit-detail-modal">&times;</button>
+                    </div>
+                    <div class="side-modal-body">
+                        <div id="profit-detail-list" class="profit-detail-list"></div>
+                    </div>
+                </div>
             </div>
+            
+            <!-- 캘린더 날짜 상세 모달 -->
+            <div class="side-modal-overlay" id="trading-calendar-detail-modal">
+                <div class="side-modal">
+                    <div class="side-modal-header">
+                        <h3 id="trading-calendar-detail-date"></h3>
+                        <button type="button" class="side-modal-close" id="close-trading-calendar-detail">&times;</button>
+                    </div>
+                    <div class="side-modal-body" id="trading-calendar-detail-content">
+                        <!-- 상세 정보가 여기에 표시됩니다 -->
+                    </div>
+                </div>
+            </div>
+            
             <!-- 매매내역 상세 모달 -->
             <div class="side-modal-overlay" id="trading-detail-modal">
                 <div class="side-modal">
@@ -211,11 +320,11 @@
                                     </div>
                                 </div>
                                 <div class="form-field form-field-full">
-                                    <label for="edit-profit-reason">익절한 이유</label>
+                                    <label for="edit-profit-reason">익절한 이유 <span style="color: var(--text-muted); font-size: 0.85rem;">(익절 또는 손절 사유 중 하나 필수)</span></label>
                                     <textarea id="edit-profit-reason" placeholder="익절한 이유를 입력하세요" rows="3"></textarea>
                                 </div>
                                 <div class="form-field form-field-full">
-                                    <label for="edit-loss-reason">손절한 이유</label>
+                                    <label for="edit-loss-reason">손절한 이유 <span style="color: var(--text-muted); font-size: 0.85rem;">(익절 또는 손절 사유 중 하나 필수)</span></label>
                                     <textarea id="edit-loss-reason" placeholder="손절한 이유를 입력하세요" rows="3"></textarea>
                                 </div>
                             </div>
@@ -235,17 +344,12 @@
                     <a href="login.html" class="login-block-button" aria-label="로그인 페이지로 이동">로그인</a>
                 </div>
             </div>
-        </section>
+        </div>
     </main>
 
     <!-- 모바일 하단 바 카테고리 -->
     <nav class="bottom-nav" aria-label="하단 카테고리">
-        <a href="index.html" class="bottom-nav__item">매매일지</a>
-        <a href="news.html" class="bottom-nav__item">뉴스</a>
-        <a href="community.html" class="bottom-nav__item">커뮤니티</a>
-        <a href="ai-analysis.html" class="bottom-nav__item">AI 분석</a>
-        <a href="calendar.html" class="bottom-nav__item">캘린더</a>
-        <a href="me.html" class="bottom-nav__item">내정보</a>
+        <a href="index.html?view=journal" class="bottom-nav__item">매매일지</a>
     </nav>
     <!-- 사이드 패널 모달 -->
     <div class="side-modal-overlay" id="modal-overlay"></div>
@@ -302,11 +406,11 @@
                         </div>
                     </div>
                     <div class="form-field form-field-full">
-                        <label for="today-profit-reason">익절한 이유</label>
+                        <label for="today-profit-reason">익절한 이유 <span style="color: var(--text-muted); font-size: 0.85rem;">(익절 또는 손절 사유 중 하나 필수)</span></label>
                         <textarea id="today-profit-reason" placeholder="익절한 이유를 입력하세요" rows="3"></textarea>
                     </div>
                     <div class="form-field form-field-full">
-                        <label for="today-loss-reason">손절한 이유</label>
+                        <label for="today-loss-reason">손절한 이유 <span style="color: var(--text-muted); font-size: 0.85rem;">(익절 또는 손절 사유 중 하나 필수)</span></label>
                         <textarea id="today-loss-reason" placeholder="손절한 이유를 입력하세요" rows="3"></textarea>
                     </div>
                 </div>
@@ -370,11 +474,11 @@
                         </div>
                     </div>
                     <div class="form-field form-field-full">
-                        <label for="month-profit-reason">익절한 이유</label>
+                        <label for="month-profit-reason">익절한 이유 <span style="color: var(--text-muted); font-size: 0.85rem;">(익절 또는 손절 사유 중 하나 필수)</span></label>
                         <textarea id="month-profit-reason" placeholder="익절한 이유를 입력하세요" rows="3"></textarea>
                     </div>
                     <div class="form-field form-field-full">
-                        <label for="month-loss-reason">손절한 이유</label>
+                        <label for="month-loss-reason">손절한 이유 <span style="color: var(--text-muted); font-size: 0.85rem;">(익절 또는 손절 사유 중 하나 필수)</span></label>
                         <textarea id="month-loss-reason" placeholder="손절한 이유를 입력하세요" rows="3"></textarea>
                     </div>
                 </div>
@@ -383,6 +487,150 @@
                     <button type="button" class="cancel-btn" data-modal="month-trading-modal">취소</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- 내 정보 모달 -->
+    <div class="side-modal-overlay" id="profile-modal-overlay" style="display: none;">
+        <div class="side-modal profile-modal">
+            <div class="side-modal-header">
+                <h3>내 정보</h3>
+                <button type="button" class="side-modal-close" id="profile-modal-close">×</button>
+            </div>
+            <div class="side-modal-body profile-modal-body">
+                <!-- 프로필 헤더 -->
+                <div class="profile-header">
+                    <div class="profile-avatar-circle">
+                        <span class="profile-avatar-initial" id="profile-avatar-initial-modal">-</span>
+                    </div>
+                    <h3 class="profile-name" id="profile-nickname-modal">-</h3>
+                </div>
+
+                <!-- 메뉴 카드 -->
+                <div class="profile-menu-card">
+                    <h3 class="profile-menu-title">설정</h3>
+                    <div class="profile-menu-list">
+                        <!-- 로그인 UI (로그인 안 되어 있을 때만 표시) -->
+                        <div class="profile-auth-section" id="profile-auth-section-modal">
+                            <a class="profile-auth-trigger" id="profile-auth-toggle-modal" href="login.html">로그인</a>
+                        </div>
+                        <button type="button" class="profile-menu-item" id="btn-edit-profile-modal">
+                            <span class="profile-menu-text">회원정보 수정</span>
+                            <span class="profile-menu-arrow">›</span>
+                        </button>
+                        <div class="profile-menu-item profile-menu-item-email">
+                            <span class="profile-menu-text">문의하기</span>
+                            <a href="mailto:dongyeopwoo1@gmail.com" class="profile-email">dongyeopwoo1@gmail.com</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 로그아웃 및 회원탈퇴 버튼 (로그인되어 있을 때만 표시) -->
+                <div class="profile-actions" id="profile-actions-modal" hidden>
+                    <button type="button" class="profile-logout-btn" id="profile-auth-logout-modal">로그아웃</button>
+                    <button type="button" class="profile-delete-btn" id="profile-delete-account-modal">회원탈퇴</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 회원정보 수정 모달 -->
+    <div class="side-modal-overlay" id="edit-profile-modal" style="display: none;">
+        <div class="side-modal">
+            <div class="side-modal-header">
+                <h3>회원정보 수정</h3>
+                <button type="button" class="side-modal-close" id="close-edit-profile-modal">×</button>
+            </div>
+            <div class="side-modal-body">
+                <div class="profile-edit-menu">
+                    <button type="button" class="profile-edit-item" id="btn-change-password">
+                        <span class="profile-edit-text">비밀번호 변경</span>
+                        <span class="profile-edit-arrow">›</span>
+                    </button>
+                    <button type="button" class="profile-edit-item" id="btn-change-nickname">
+                        <span class="profile-edit-text">닉네임 변경</span>
+                        <span class="profile-edit-arrow">›</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 비밀번호 변경 모달 -->
+    <div class="side-modal-overlay" id="change-password-modal" style="display: none;">
+        <div class="side-modal">
+            <div class="side-modal-header">
+                <h3>비밀번호 변경</h3>
+                <button type="button" class="side-modal-close" id="close-change-password-modal">×</button>
+            </div>
+            <div class="side-modal-body">
+                <form class="auth-form" id="change-password-form" novalidate>
+                    <div class="auth-field">
+                        <label for="current-password">현재 비밀번호</label>
+                        <input id="current-password" name="currentPassword" type="password" autocomplete="current-password" placeholder="현재 비밀번호를 입력하세요" required>
+                    </div>
+                    <div class="auth-field">
+                        <label for="new-password">새 비밀번호</label>
+                        <input id="new-password" name="newPassword" type="password" autocomplete="new-password" placeholder="새 비밀번호를 입력하세요" required minlength="8" maxlength="64">
+                    </div>
+                    <div class="auth-field">
+                        <label for="confirm-password">새 비밀번호 확인</label>
+                        <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" placeholder="새 비밀번호를 다시 입력하세요" required minlength="8" maxlength="64">
+                    </div>
+                    <button class="cta-button full-width" id="change-password-submit" type="submit">비밀번호 변경</button>
+                    <p class="auth-message" id="change-password-message" role="status" aria-live="polite"></p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 닉네임 변경 모달 -->
+    <div class="side-modal-overlay" id="change-nickname-modal" style="display: none;">
+        <div class="side-modal">
+            <div class="side-modal-header">
+                <h3>닉네임 변경</h3>
+                <button type="button" class="side-modal-close" id="close-change-nickname-modal">×</button>
+            </div>
+            <div class="side-modal-body">
+                <form class="auth-form" id="change-nickname-form" novalidate>
+                    <div class="auth-field">
+                        <label for="new-display-name">새 닉네임</label>
+                        <input id="new-display-name" name="displayName" type="text" autocomplete="nickname" placeholder="새 닉네임을 입력하세요" required minlength="1" maxlength="60" value="">
+                    </div>
+                    <button class="cta-button full-width" id="change-nickname-submit" type="submit">닉네임 변경</button>
+                    <p class="auth-message" id="change-nickname-message" role="status" aria-live="polite"></p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 작성한 글 모달 -->
+    <div class="side-modal-overlay" id="my-posts-modal" style="display: none;">
+        <div class="side-modal">
+            <div class="side-modal-header">
+                <h3>내가 쓴 글</h3>
+                <button type="button" class="side-modal-close" id="close-my-posts-modal">×</button>
+            </div>
+            <div class="side-modal-body">
+                <div id="my-posts-list" class="trading-list-scroll">
+                    <div class="empty-trading-list">작성한 글이 없습니다.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 내가 댓글 단 글 모달 -->
+    <div class="side-modal-overlay" id="my-comments-modal" style="display: none;">
+        <div class="side-modal">
+            <div class="side-modal-header">
+                <h3>내가 댓글 단 글</h3>
+                <button type="button" class="side-modal-close" id="close-my-comments-modal">×</button>
+            </div>
+            <div class="side-modal-body">
+                <div id="my-comments-list" class="trading-list-scroll">
+                    <div class="empty-trading-list">댓글을 단 글이 없습니다.</div>
+                </div>
+            </div>
         </div>
     </div>
 

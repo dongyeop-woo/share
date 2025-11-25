@@ -11,7 +11,7 @@
 </head>
 <body>
     <header class="site-header">
-        <a href="index.html" class="brand" style="text-decoration: none; color: inherit;">
+        <a href="dashboard.html" class="brand" style="text-decoration: none; color: inherit;">
             <span class="brand-mark" aria-hidden="true">📈</span>
             <div>
                 <p class="brand-name">TradeNote</p>
@@ -26,12 +26,9 @@
     </header>
 
     <nav class="side-nav" aria-label="주요 카테고리">
-        <a href="index.html" class="side-nav__item">매매일지</a>
+        <a href="dashboard.html" class="side-nav__item">대시보드</a>
+        <a href="index.html?view=journal" class="side-nav__item">매매일지</a>
         <a href="news.html" class="side-nav__item">뉴스</a>
-        <a href="community.html" class="side-nav__item">커뮤니티</a>
-        <a href="ai-analysis.html" class="side-nav__item">AI 분석</a>
-        <a href="calendar.html" class="side-nav__item">캘린더</a>
-        <a href="me.html" class="side-nav__item">내정보</a>
     </nav>
 
     <main>
@@ -42,19 +39,14 @@
             </header>
             <div class="news-tabs">
                 <button class="news-tab active" data-news-type="korea">한국 뉴스</button>
-                <button class="news-tab" data-news-type="usa">미국 뉴스</button>
             </div>
             <div class="card-grid" id="news-list" aria-live="polite"></div>
         </section>
     </main>
 
     <nav class="bottom-nav" aria-label="하단 카테고리">
-        <a href="index.html" class="bottom-nav__item">매매일지</a>
+        <a href="index.html?view=journal" class="bottom-nav__item">매매일지</a>
         <a href="news.html" class="bottom-nav__item">뉴스</a>
-        <a href="community.html" class="bottom-nav__item">커뮤니티</a>
-        <a href="ai-analysis.html" class="bottom-nav__item">AI 분석</a>
-        <a href="calendar.html" class="bottom-nav__item">캘린더</a>
-        <a href="me.html" class="bottom-nav__item">내정보</a>
     </nav>
 </body>
 <script>
@@ -73,7 +65,7 @@ const fetchNewsByType = async (type) => {
         const API_BASE = isProduction 
             ? 'https://weektalk.co.kr'  // FastAPI (Nginx를 통해 /api/ 경로로 라우팅, HTTPS)
             : `http://${window.location.hostname}:8000`;
-        const endpoint = type === "korea" ? "/api/news/korea" : "/api/news/usa";
+        const endpoint = "/api/news/korea";
         const response = await fetch(`${API_BASE}${endpoint}`);
         if (!response.ok) throw new Error("뉴스 API 실패");
         const data = await response.json();
@@ -91,7 +83,7 @@ const fetchNewsByType = async (type) => {
                 sentiment: "neutral",
                 time: new Date(item.published_at).toLocaleString("ko-KR", { hour12: false }),
                 url: item.url,
-                source: item.source ?? (type === "korea" ? "한국 뉴스" : "미국 뉴스"),
+                source: item.source ?? "한국 뉴스",
                 originalTitle: item.headline,
                 originalSummary: item.summary,
                 image: item.image || null,
@@ -114,7 +106,7 @@ const loadNews = async (type) => {
     }
     
     // 타입 검증
-    if (type !== "korea" && type !== "usa") {
+    if (type !== "korea") {
         console.warn("잘못된 뉴스 타입:", type);
         return;
     }
@@ -196,18 +188,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     // 초기 상태: 한국 뉴스 탭 활성화 (명확히 설정)
     const koreaTab = document.querySelector('.news-tab[data-news-type="korea"]');
-    const usaTab = document.querySelector('.news-tab[data-news-type="usa"]');
     if (koreaTab) koreaTab.classList.add("active");
-    if (usaTab) usaTab.classList.remove("active");
     
     // 다시 한번 명확히 설정
     currentNewsType = "korea";
     
-    // 탭 클릭 이벤트
+    // 탭 클릭 이벤트 (한국 뉴스만 있으므로 실제로는 필요 없지만 유지)
     newsTabs.forEach(tab => {
         tab.addEventListener("click", async () => {
             const type = tab.getAttribute("data-news-type");
-            if (!type || (type !== "korea" && type !== "usa")) return;
+            if (!type || type !== "korea") return;
             if (type === currentNewsType && !isLoadingNews) return;
             
             // 탭 활성화 상태 먼저 업데이트

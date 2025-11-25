@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
+    <title>TradeNote | 대시보드</title>
+    <link rel="stylesheet" href="assets/styles.css">
+    <script src="https://unpkg.com/lightweight-charts@3.8.0/dist/lightweight-charts.standalone.production.js"></script>
+    <script src="assets/app.js" defer></script>
+</head>
+
+<body class="dashboard-body">
+    <header class="site-header">
+        <a href="dashboard.html" class="brand" style="text-decoration: none; color: inherit;">
+            <span class="brand-mark" aria-hidden="true">📈</span>
+            <div>
+                <p class="brand-name">TradeNote</p>
+                <p class="brand-tagline">쉽고 간단하게</p>
+            </div>
+        </a>
+        <div class="header-actions">
+            <button class="theme-toggle" id="theme-toggle" type="button" aria-label="테마 변경" title="다크모드/라이트모드 전환">
+                <span class="theme-icon">⚙️</span>
+            </button>
+            <a class="auth-trigger" id="auth-toggle" href="login.html">로그인</a>
+            <div class="auth-status" id="auth-status" hidden>
+                <span id="auth-display-name"></span>
+                <button class="auth-logout" id="auth-logout" type="button">로그아웃</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- 데스크탑 왼쪽 사이드 카테고리 -->
+    <nav class="side-nav" aria-label="주요 카테고리">
+        <a href="dashboard.html" class="side-nav__item active">대시보드</a>
+        <a href="index.html?view=journal" class="side-nav__item">매매일지</a>
+    </nav>
+
+    <main class="toss-main">
+        <div class="toss-dashboard-container">
+            <!-- 1. 헤더 (종목 정보) -->
+            <header class="dashboard-header">
+                <div class="stock-info-header">
+                    <div class="stock-title">
+                        <h2 id="dashboard-name">TradeNote</h2>
+                        <span id="dashboard-symbol" class="stock-code">005930</span>
+                        <span class="stock-badge">KOSPI</span>
+                    </div>
+                    <div class="stock-price-large">
+                        <span id="current-price" class="current-price">-</span>
+                        <span id="price-change" class="price-change">-</span>
+                        <span id="price-percent" class="price-percent">-</span>
+                    </div>
+                </div>
+                <div class="header-controls">
+                    <button type="button" class="search-btn" id="open-search-modal-btn">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M7.33333 12.6667C10.2789 12.6667 12.6667 10.2789 12.6667 7.33333C12.6667 4.38781 10.2789 2 7.33333 2C4.38781 2 2 4.38781 2 7.33333C2 10.2789 4.38781 12.6667 7.33333 12.6667Z" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                            <path d="M14 14L11.1 11.1" stroke="#6B7280" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                        </svg>
+                        검색
+                    </button>
+                    <button type="button" class="profile-btn" id="open-profile-modal-btn" aria-label="내 정보">
+                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <path d="M10 10C12.7614 10 15 7.76142 15 5C15 2.23858 12.7614 0 10 0C7.23858 0 5 2.23858 5 5C5 7.76142 7.23858 10 10 10Z" fill="#6B7280"/>
+                            <path d="M10 12C5.58172 12 2 14.6863 2 18V20H18V18C18 14.6863 14.4183 12 10 12Z" fill="#6B7280"/>
+                        </svg>
+                    </button>
+                </div>
+            </header>
+
+            <!-- 2. 메인 그리드 (차트 | 호가 | 주문 | 계좌) -->
+            <div class="dashboard-grid-layout">
+
+                <!-- 컬럼 1: 차트 & 하단 정보 -->
+                <div class="grid-col-chart">
+                    <!-- 차트 컨트롤 -->
+                    <div class="chart-toolbar">
+                        <div class="period-selector">
+                            <button type="button" class="period-btn active" data-period="day">일</button>
+                            <button type="button" class="period-btn" data-period="week">주</button>
+                            <button type="button" class="period-btn" data-period="month">월</button>
+                            <button type="button" class="period-btn" data-period="year">년</button>
+                        </div>
+                        <div class="chart-toolbar-actions">
+                            <button type="button" class="draw-mode-btn" id="open-drawing-mode-btn">그리기 모드</button>
+                            <button type="button" class="draw-mode-btn" id="open-indicator-reliability-btn">지표 신뢰 테스트</button>
+                            <div class="chart-range-label" id="chart-range-label">표시 기간: 계산 중...</div>
+                        </div>
+                    </div>
+
+                    <!-- 차트 영역 -->
+                    <div class="chart-area">
+                        <div id="dashboard-chart" style="width: 100%; height: 500px;"></div>
+                        <div class="chart-overlay-info">
+                            <div class="info-item">
+                                <span class="label">고가</span>
+                                <strong id="chart-high">-</strong>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">저가</span>
+                                <strong id="chart-low">-</strong>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">시가</span>
+                                <strong id="chart-open">-</strong>
+                            </div>
+                        </div>
+                        <div class="chart-crosshair-label" id="chart-crosshair-label">날짜: -</div>
+                    </div>
+
+                    <!-- 핵심 분석 하이라이트 -->
+                    <section class="analysis-highlights" id="analysis-highlights" aria-live="polite">
+                        <article class="highlight-card highlight-signal signal-neutral" id="highlight-signal-card">
+                            <div class="highlight-label">종합 신호</div>
+                            <div class="highlight-value" id="highlight-signal-value">분석 대기중</div>
+                            <p class="highlight-sub" id="highlight-signal-desc">차트 분석 결과가 표시됩니다.</p>
+                            <div class="highlight-meta" id="highlight-signal-meta">-</div>
+                        </article>
+                        <article class="highlight-card" id="highlight-rsi-card">
+                            <div class="highlight-label">RSI</div>
+                            <div class="highlight-value" id="highlight-rsi-value">-</div>
+                            <p class="highlight-sub" id="highlight-rsi-desc">지표 데이터를 불러오는 중</p>
+                            <div class="highlight-bar">
+                                <span class="highlight-bar-fill" id="highlight-rsi-bar" style="width: 0%;"></span>
+                            </div>
+                            <div class="highlight-meta">30 이하 → 과매도 · 70 이상 → 과매수</div>
+                        </article>
+                        <article class="highlight-card" id="highlight-risk-card">
+                            <div class="highlight-label">리스크 & 변동성</div>
+                            <div class="highlight-value" id="highlight-risk-level">-</div>
+                            <p class="highlight-sub" id="highlight-risk-desc">-</p>
+                            <div class="highlight-meta" id="highlight-risk-range">52주 범위: -</div>
+                        </article>
+                        <article class="highlight-card" id="highlight-price-card">
+                            <div class="highlight-label">주요 가격대</div>
+                            <div class="highlight-pair">
+                                <span class="highlight-tag highlight-tag-support">지지선</span>
+                                <strong id="highlight-support-value">-</strong>
+                            </div>
+                            <div class="highlight-pair">
+                                <span class="highlight-tag highlight-tag-resistance">저항선</span>
+                                <strong id="highlight-resistance-value">-</strong>
+                            </div>
+                            <p class="highlight-sub">최근 감지된 핵심 가격 레벨</p>
+                        </article>
+                    </section>
+
+                    <!-- AI 분석 패널 (자동 분석으로 변경되어 버튼 제거) -->
+                    <div class="ai-analysis-panel" id="ai-analysis-panel" style="display: none;">
+                        <div class="panel-header">
+                            <h3>🤖 AI 차트 분석</h3>
+                            <p style="margin: 0; color: var(--text-muted); font-size: 0.9rem;">차트 로드 시 자동으로 분석됩니다.</p>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- 컬럼 2: 호가 & 즐겨찾기 -->
+                <div class="grid-col-hoga-wrapper">
+                    <!-- 호가 -->
+                    <div class="grid-col-hoga">
+                        <div class="hoga-header">
+                            <h3>호가</h3>
+                        </div>
+                        <div class="orderbook-container">
+                            <div class="orderbook-sell">
+                                <div id="orderbook-sell-list" class="orderbook-list">
+                                    <!-- JS로 채워짐 -->
+                                </div>
+                            </div>
+                            <div class="orderbook-buy">
+                                <div id="orderbook-buy-list" class="orderbook-list">
+                                    <!-- JS로 채워짐 -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- 즐겨찾기 -->
+                    <div class="grid-col-favorites">
+                        <div class="favorites-header">
+                            <h3>즐겨찾기</h3>
+                            <button type="button" class="favorite-toggle-btn" id="favorites-heart-btn" title="즐겨찾기">
+                                <span id="favorites-heart-icon">🤍</span>
+                            </button>
+                        </div>
+                        <div class="favorites-container" id="favorites-container">
+                            <div id="favorites-list" class="favorites-list">
+                                <!-- JS로 채워짐 -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 컬럼 3: AI 분석 사이드바 -->
+                <div class="grid-col-analysis" id="analysis-sidebar">
+                    <div class="analysis-sidebar-content" id="analysis-sidebar-content">
+                        <div class="analysis-loading" style="padding: 2rem; text-align: center; color: var(--text-muted);">
+                            <p>차트를 로드하는 중...</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+            
+            <!-- 로그인 필요 오버레이 -->
+            <div class="login-block-overlay" id="login-overlay" aria-hidden="true">
+                <div class="login-block-content" role="dialog" aria-labelledby="login-block-title" aria-describedby="login-block-desc">
+                    <h3 id="login-block-title">로그인이 필요합니다</h3>
+                    <p id="login-block-desc">대시보드를 사용하려면 로그인해주세요.</p>
+                    <a href="login.html" class="login-block-button" aria-label="로그인 페이지로 이동">로그인</a>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <div class="drawing-overlay" id="drawing-overlay" aria-hidden="true">
+        <div class="drawing-overlay-inner">
+            <div class="drawing-toolbar">
+                <div class="drawing-info">
+                    <strong>차트 드로잉 모드</strong>
+                    <span>마우스로 직접 선을 그리면서 분석해보세요.</span>
+                </div>
+                <div class="drawing-tools" role="toolbar" aria-label="드로잉 도구">
+                    <button type="button" class="drawing-tool-btn active" data-tool="brush">✏️ 자유</button>
+                    <button type="button" class="drawing-tool-btn" data-tool="line">／ 직선</button>
+                    <button type="button" class="drawing-tool-btn" data-tool="hline">━ 수평선</button>
+                    <button type="button" class="drawing-tool-btn" data-tool="rect">▢ 영역</button>
+                    <button type="button" class="drawing-tool-btn" data-tool="text">📝 텍스트</button>
+                </div>
+                <div class="drawing-buttons">
+                    <button type="button" id="drawing-undo-btn">되돌리기</button>
+                    <button type="button" id="drawing-clear-btn">모두 지우기</button>
+                    <button type="button" class="drawing-close-btn" id="close-drawing-mode-btn">닫기</button>
+                </div>
+            </div>
+            <div class="drawing-chart-wrapper">
+                <div id="drawing-chart" class="drawing-chart"></div>
+                <canvas id="drawing-canvas"></canvas>
+                <div class="drawing-empty" id="drawing-empty-state" hidden>
+                    <p>차트 데이터를 불러오는 중입니다...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI 분석 결과 모달 -->
+    <div class="modal-overlay" id="analysis-modal-overlay" style="display: none;">
+        <div class="modal-content analysis-modal-content">
+            <div class="modal-header">
+                <h3>🤖 AI 차트 분석 결과</h3>
+                <button type="button" class="modal-close" id="analysis-modal-close">&times;</button>
+            </div>
+            <div class="modal-body analysis-modal-body">
+                <!-- 기술적 지표 -->
+                <div class="analysis-section">
+                    <h4>
+                        📊 기술적 지표
+                        <span class="tooltip-icon" data-tooltip="RSI: 과매수/과매도 판단 지표 (30 이하: 과매도, 70 이상: 과매수)&#10;MACD: 추세 전환 신호 지표&#10;볼린저 밴드: 가격 변동성 범위 표시">?</span>
+                    </h4>
+                    <div id="technical-indicators-modal" class="indicators-grid"></div>
+                </div>
+                
+                <!-- 매매 신호 -->
+                <div class="analysis-section">
+                    <h4>
+                        🎯 매매 신호
+                        <span class="tooltip-icon" data-tooltip="BUY: 매수 신호 (상승 가능성)&#10;SELL: 매도 신호 (하락 가능성)&#10;HOLD: 보유 권장 (현재 추세 유지)">?</span>
+                    </h4>
+                    <div id="trading-signal-modal" class="signal-box"></div>
+                </div>
+                
+                <!-- 지지/저항선 -->
+                <div class="analysis-section">
+                    <h4>
+                        📈 지지/저항선
+                        <span class="tooltip-icon" data-tooltip="지지선: 가격이 하락할 때 지지하는 가격대&#10;저항선: 가격이 상승할 때 저항하는 가격대">?</span>
+                    </h4>
+                    <div id="support-resistance-modal" class="sr-list"></div>
+                </div>
+                
+                <!-- 패턴 -->
+                <div class="analysis-section">
+                    <h4>
+                        🔍 차트 패턴
+                        <span class="tooltip-icon" data-tooltip="차트에서 반복되는 가격 패턴을 감지합니다.&#10;패턴은 향후 가격 움직임을 예측하는 데 도움이 됩니다.">?</span>
+                    </h4>
+                    <div id="patterns-modal" class="patterns-list"></div>
+                </div>
+                
+                <!-- 리스크 분석 -->
+                <div class="analysis-section">
+                    <h4>
+                        ⚠️ 리스크 분석
+                        <span class="tooltip-icon" data-tooltip="변동성: 가격 변동 폭 (높을수록 위험)&#10;리스크 레벨: 투자 위험도 평가">?</span>
+                    </h4>
+                    <div id="risk-analysis-modal" class="risk-box"></div>
+                </div>
+                
+                <!-- 요약 -->
+                <div class="analysis-section">
+                    <h4>📝 요약</h4>
+                    <div id="analysis-summary-modal" class="summary-text"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 종목 검색 모달 -->
+    <div class="search-modal-overlay" id="search-modal-overlay" style="display: none;">
+        <div class="search-modal">
+            <div class="search-modal-header">
+                <h3>검색</h3>
+                <button type="button" class="search-modal-close" id="search-modal-close">&times;</button>
+            </div>
+            <div class="search-modal-body">
+                <form id="modal-search-form" class="modal-search-form" novalidate>
+                    <input id="modal-search-input" type="search" placeholder="/를 눌러 검색하세요"
+                        autocomplete="off">
+                    <button type="submit">검색</button>
+                </form>
+                <div class="search-results-list" id="search-results-list">
+                    <p class="search-placeholder">검색어를 입력해주세요</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 내 정보 모달 -->
+    <div class="side-modal-overlay" id="profile-modal-overlay" style="display: none;">
+        <div class="side-modal profile-modal">
+            <div class="side-modal-header">
+                <h3>내 정보</h3>
+                <button type="button" class="side-modal-close" id="profile-modal-close">×</button>
+            </div>
+            <div class="side-modal-body profile-modal-body">
+                <!-- 프로필 헤더 -->
+                <div class="profile-header">
+                    <div class="profile-avatar-circle">
+                        <span class="profile-avatar-initial" id="profile-avatar-initial-modal">-</span>
+                    </div>
+                    <h3 class="profile-name" id="profile-nickname-modal">-</h3>
+                </div>
+
+                <!-- 메뉴 카드 -->
+                <div class="profile-menu-card">
+                    <h3 class="profile-menu-title">설정</h3>
+                    <div class="profile-menu-list">
+                        <!-- 로그인 UI (로그인 안 되어 있을 때만 표시) -->
+                        <div class="profile-auth-section" id="profile-auth-section-modal">
+                            <a class="profile-auth-trigger" id="profile-auth-toggle-modal" href="login.html">로그인</a>
+                        </div>
+                        <button type="button" class="profile-menu-item" id="btn-edit-profile-modal">
+                            <span class="profile-menu-text">회원정보 수정</span>
+                            <span class="profile-menu-arrow">›</span>
+                        </button>
+                        <div class="profile-menu-item profile-menu-item-email">
+                            <span class="profile-menu-text">문의하기</span>
+                            <a href="mailto:dongyeopwoo1@gmail.com" class="profile-email">dongyeopwoo1@gmail.com</a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 로그아웃 및 회원탈퇴 버튼 (로그인되어 있을 때만 표시) -->
+                <div class="profile-actions" id="profile-actions-modal" hidden>
+                    <button type="button" class="profile-logout-btn" id="profile-auth-logout-modal">로그아웃</button>
+                    <button type="button" class="profile-delete-btn" id="profile-delete-account-modal">회원탈퇴</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 회원정보 수정 모달 -->
+    <div class="side-modal-overlay" id="edit-profile-modal" style="display: none;">
+        <div class="side-modal">
+            <div class="side-modal-header">
+                <h3>회원정보 수정</h3>
+                <button type="button" class="side-modal-close" id="close-edit-profile-modal">×</button>
+            </div>
+            <div class="side-modal-body">
+                <div class="profile-edit-menu">
+                    <button type="button" class="profile-edit-item" id="btn-change-password">
+                        <span class="profile-edit-text">비밀번호 변경</span>
+                        <span class="profile-edit-arrow">›</span>
+                    </button>
+                    <button type="button" class="profile-edit-item" id="btn-change-nickname">
+                        <span class="profile-edit-text">닉네임 변경</span>
+                        <span class="profile-edit-arrow">›</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 비밀번호 변경 모달 -->
+    <div class="side-modal-overlay" id="change-password-modal" style="display: none;">
+        <div class="side-modal">
+            <div class="side-modal-header">
+                <h3>비밀번호 변경</h3>
+                <button type="button" class="side-modal-close" id="close-change-password-modal">×</button>
+            </div>
+            <div class="side-modal-body">
+                <form class="auth-form" id="change-password-form" novalidate>
+                    <div class="auth-field">
+                        <label for="current-password">현재 비밀번호</label>
+                        <input id="current-password" name="currentPassword" type="password" autocomplete="current-password" placeholder="현재 비밀번호를 입력하세요" required>
+                    </div>
+                    <div class="auth-field">
+                        <label for="new-password">새 비밀번호</label>
+                        <input id="new-password" name="newPassword" type="password" autocomplete="new-password" placeholder="새 비밀번호를 입력하세요" required minlength="8" maxlength="64">
+                    </div>
+                    <div class="auth-field">
+                        <label for="confirm-password">새 비밀번호 확인</label>
+                        <input id="confirm-password" name="confirmPassword" type="password" autocomplete="new-password" placeholder="새 비밀번호를 다시 입력하세요" required minlength="8" maxlength="64">
+                    </div>
+                    <button class="cta-button full-width" id="change-password-submit" type="submit">비밀번호 변경</button>
+                    <p class="auth-message" id="change-password-message" role="status" aria-live="polite"></p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 닉네임 변경 모달 -->
+    <div class="side-modal-overlay" id="change-nickname-modal" style="display: none;">
+        <div class="side-modal">
+            <div class="side-modal-header">
+                <h3>닉네임 변경</h3>
+                <button type="button" class="side-modal-close" id="close-change-nickname-modal">×</button>
+            </div>
+            <div class="side-modal-body">
+                <form class="auth-form" id="change-nickname-form" novalidate>
+                    <div class="auth-field">
+                        <label for="new-display-name">새 닉네임</label>
+                        <input id="new-display-name" name="displayName" type="text" autocomplete="nickname" placeholder="새 닉네임을 입력하세요" required minlength="1" maxlength="60" value="">
+                    </div>
+                    <button class="cta-button full-width" id="change-nickname-submit" type="submit">닉네임 변경</button>
+                    <p class="auth-message" id="change-nickname-message" role="status" aria-live="polite"></p>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- 작성한 글 모달 -->
+    <div class="side-modal-overlay" id="my-posts-modal" style="display: none;">
+        <div class="side-modal">
+            <div class="side-modal-header">
+                <h3>내가 쓴 글</h3>
+                <button type="button" class="side-modal-close" id="close-my-posts-modal">×</button>
+            </div>
+            <div class="side-modal-body">
+                <div id="my-posts-list" class="trading-list-scroll">
+                    <div class="empty-trading-list">작성한 글이 없습니다.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 내가 댓글 단 글 모달 -->
+    <div class="side-modal-overlay" id="my-comments-modal" style="display: none;">
+        <div class="side-modal">
+            <div class="side-modal-header">
+                <h3>내가 댓글 단 글</h3>
+                <button type="button" class="side-modal-close" id="close-my-comments-modal">×</button>
+            </div>
+            <div class="side-modal-body">
+                <div id="my-comments-list" class="trading-list-scroll">
+                    <div class="empty-trading-list">댓글을 단 글이 없습니다.</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 모바일 하단 바 카테고리 -->
+    <nav class="bottom-nav" aria-label="하단 카테고리">
+        <a href="dashboard.html" class="bottom-nav__item active">대시보드</a>
+        <a href="index.html?view=journal" class="bottom-nav__item">매매일지</a>
+    </nav>
+
+    <!-- 관심 카테고리 모달 -->
+    <!-- 지표 신뢰 테스트 결과 모달 -->
+    <div class="modal-overlay" id="indicator-reliability-modal" style="display: none;">
+        <div class="modal-content" style="max-width: 95vw; width: 95vw; max-height: 90vh; overflow: hidden;">
+            <div class="modal-body" id="indicator-reliability-content" style="display: flex; flex-direction: column; align-items: center; justify-content: flex-start; padding: 2rem;">
+                <div style="text-align: center; padding: 2rem;">
+                    <div class="loading-spinner" style="margin: 0 auto;"></div>
+                    <p style="margin-top: 1rem; color: var(--text-muted);">테스트를 실행하는 중입니다...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="side-modal-overlay" id="interest-category-modal">
+        <div class="side-modal">
+            <div class="side-modal-header">
+                <h3>관심 카테고리</h3>
+                <button type="button" class="side-modal-close" id="close-interest-category-modal">&times;</button>
+            </div>
+            <div class="side-modal-body">
+                <div class="interest-category-content">
+                    <div class="category-section">
+                        <h4>관심 종목</h4>
+                        <div id="favorite-stocks-list" class="favorite-list">
+                            <p class="empty-message">즐겨찾기한 종목이 없습니다.</p>
+                        </div>
+                    </div>
+                    <div class="category-section">
+                        <h4>관심 섹터</h4>
+                        <div id="favorite-sectors-list" class="favorite-list">
+                            <div class="sector-item">
+                                <input type="checkbox" id="sector-tech" value="tech">
+                                <label for="sector-tech">기술</label>
+                            </div>
+                            <div class="sector-item">
+                                <input type="checkbox" id="sector-finance" value="finance">
+                                <label for="sector-finance">금융</label>
+                            </div>
+                            <div class="sector-item">
+                                <input type="checkbox" id="sector-energy" value="energy">
+                                <label for="sector-energy">에너지</label>
+                            </div>
+                            <div class="sector-item">
+                                <input type="checkbox" id="sector-healthcare" value="healthcare">
+                                <label for="sector-healthcare">의료</label>
+                            </div>
+                            <div class="sector-item">
+                                <input type="checkbox" id="sector-consumer" value="consumer">
+                                <label for="sector-consumer">소비재</label>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="category-section">
+                        <h4>알림 설정</h4>
+                        <div class="notification-settings">
+                            <div class="setting-item">
+                                <label>
+                                    <input type="checkbox" id="notify-price-change">
+                                    가격 변동 알림
+                                </label>
+                            </div>
+                            <div class="setting-item">
+                                <label>
+                                    <input type="checkbox" id="notify-volume-spike">
+                                    거래량 급증 알림
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
