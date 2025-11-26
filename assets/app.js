@@ -4,8 +4,13 @@ const CURRENT_HOST = window.location.hostname || "localhost";
 // 프로덕션 환경 감지 (GitHub Pages 또는 도메인)
 const isProduction = window.location.hostname === 'dongyeop-woo.github.io' || 
                      window.location.hostname.endsWith('.github.io') ||
-                     window.location.hostname === 'weektalk.co.kr' ||
-                     window.location.hostname === 'www.weektalk.co.kr';
+                     window.location.hostname === 'tradenotekr.com' ||
+                     window.location.hostname === 'www.tradenotekr.com' ||
+                     (window.location.hostname !== 'localhost' && 
+                      !window.location.hostname.startsWith('192.168.') && 
+                      !window.location.hostname.startsWith('127.0.0.1') &&
+                      !window.location.hostname.startsWith('10.0.') &&
+                      window.location.port === '');  // 포트가 없으면 프로덕션으로 간주
 
 // 프로덕션에서 console.log 제거를 위한 유틸리티
 const debugLog = isProduction ? () => {} : console.log.bind(console);
@@ -14,11 +19,11 @@ const debugError = console.error.bind(console); // 에러는 항상 표시
 
 // 프로덕션에서는 도메인 사용 (HTTPS), 개발 환경에서는 로컬 호스트 사용
 const API_BASE = isProduction 
-    ? 'https://weektalk.co.kr'  // FastAPI (Nginx를 통해 /api/ 경로로 라우팅, HTTPS)
+    ? 'https://tradenotekr.com'  // FastAPI (Nginx를 통해 /api/ 경로로 라우팅, HTTPS)
     : `http://${CURRENT_HOST}:8000`;
 
 const AUTH_API_BASE = isProduction
-    ? 'https://weektalk.co.kr'  // Spring Boot (Nginx를 통해 /api/auth 경로로 라우팅, HTTPS)
+    ? 'https://tradenotekr.com'  // Spring Boot (Nginx를 통해 /api/auth 경로로 라우팅, HTTPS)
     : `http://${CURRENT_HOST}:8001`;
 
 const AUTH_STORAGE_KEY = "breakingShareUser";
@@ -3213,16 +3218,6 @@ const initMe = async () => {
     const loginOverlay = document.getElementById("login-overlay");
     const profileNickname = document.getElementById("profile-nickname");
     const profileAvatarInitial = document.getElementById("profile-avatar-initial");
-    const profilePostsCount = document.getElementById("profile-posts-count");
-    const profileCommentsCount = document.getElementById("profile-comments-count");
-    const profilePostsClickable = document.getElementById("profile-posts-clickable");
-    const profileCommentsClickable = document.getElementById("profile-comments-clickable");
-    const myPostsModal = document.getElementById("my-posts-modal");
-    const myCommentsModal = document.getElementById("my-comments-modal");
-    const closeMyPostsModal = document.getElementById("close-my-posts-modal");
-    const closeMyCommentsModal = document.getElementById("close-my-comments-modal");
-    const myPostsList = document.getElementById("my-posts-list");
-    const myCommentsList = document.getElementById("my-comments-list");
     const editProfileModal = document.getElementById("edit-profile-modal");
     const closeEditProfileModal = document.getElementById("close-edit-profile-modal");
     const btnEditProfile = document.getElementById("btn-edit-profile");
@@ -3473,162 +3468,6 @@ const initMe = async () => {
         });
     }
     
-    // 모달 열기/닫기 함수
-    const openMyPostsModal = () => {
-        if (myPostsModal) {
-            myPostsModal.style.display = "flex";
-            myPostsModal.classList.add("active");
-            if (myPostsModal.querySelector(".side-modal")) {
-                myPostsModal.querySelector(".side-modal").classList.add("active");
-            }
-            loadMyPosts();
-        }
-    };
-    
-    const closeMyPostsModalHandler = () => {
-        if (myPostsModal) {
-            myPostsModal.style.display = "none";
-            myPostsModal.classList.remove("active");
-            if (myPostsModal.querySelector(".side-modal")) {
-                myPostsModal.querySelector(".side-modal").classList.remove("active");
-            }
-        }
-    };
-    
-    const openMyCommentsModal = () => {
-        if (myCommentsModal) {
-            myCommentsModal.style.display = "flex";
-            myCommentsModal.classList.add("active");
-            if (myCommentsModal.querySelector(".side-modal")) {
-                myCommentsModal.querySelector(".side-modal").classList.add("active");
-            }
-            loadMyCommentedPosts();
-        }
-    };
-    
-    const closeMyCommentsModalHandler = () => {
-        if (myCommentsModal) {
-            myCommentsModal.style.display = "none";
-            myCommentsModal.classList.remove("active");
-            if (myCommentsModal.querySelector(".side-modal")) {
-                myCommentsModal.querySelector(".side-modal").classList.remove("active");
-            }
-        }
-    };
-    
-    // 이벤트 리스너
-    if (profilePostsClickable) {
-        profilePostsClickable.addEventListener("click", openMyPostsModal);
-    }
-    if (profileCommentsClickable) {
-        profileCommentsClickable.addEventListener("click", openMyCommentsModal);
-    }
-    if (closeMyPostsModal) {
-        closeMyPostsModal.addEventListener("click", closeMyPostsModalHandler);
-    }
-    if (closeMyCommentsModal) {
-        closeMyCommentsModal.addEventListener("click", closeMyCommentsModalHandler);
-    }
-    if (myPostsModal) {
-        myPostsModal.addEventListener("click", (e) => {
-            if (e.target === myPostsModal) {
-                closeMyPostsModalHandler();
-            }
-        });
-    }
-    if (myCommentsModal) {
-        myCommentsModal.addEventListener("click", (e) => {
-            if (e.target === myCommentsModal) {
-                closeMyCommentsModalHandler();
-            }
-        });
-    }
-    
-    // 내가 쓴 글 로드 함수
-    const loadMyPosts = async () => {
-        try {
-            const myPostsResponse = await fetch(`${AUTH_API_BASE}/api/community/my/posts`, {
-                method: "GET",
-                credentials: "include"
-            });
-            if (myPostsResponse.ok) {
-                const posts = await myPostsResponse.json();
-                if (myPostsList) {
-                    if (posts.length === 0) {
-                        myPostsList.innerHTML = '<div class="empty-trading-list">작성한 글이 없습니다.</div>';
-                    } else {
-                        myPostsList.innerHTML = posts.map(post => `
-                            <div class="card" style="margin-bottom: 0.75rem; padding: 1rem; cursor: pointer;" onclick="window.location.href='community.html?post=${post.id}'">
-                                <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem;">
-                                    <div style="flex: 1;">
-                                        <h4 style="margin: 0 0 0.5rem; font-size: 1rem;">${post.title || "제목 없음"}</h4>
-                                        <p style="margin: 0; font-size: 0.9rem; color: var(--text-muted);">${(post.content || "").substring(0, 100)}${(post.content || "").length > 100 ? "..." : ""}</p>
-                                    </div>
-                                    <div style="display: flex; gap: 0.5rem; align-items: center; font-size: 0.85rem; color: var(--text-muted);">
-                                        <span>👍 ${post.upVotes || 0}</span>
-                                        <span>👎 ${post.downVotes || 0}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        `).join("");
-                    }
-                }
-            } else {
-                console.warn("내가 쓴 글 조회 실패:", myPostsResponse.status);
-                if (myPostsList) {
-                    myPostsList.innerHTML = '<div class="empty-trading-list">작성한 글이 없습니다.</div>';
-                }
-            }
-        } catch (error) {
-            console.error("내가 쓴 글 조회 오류:", error);
-            if (myPostsList) {
-                myPostsList.innerHTML = '<div class="empty-trading-list">작성한 글이 없습니다.</div>';
-            }
-        }
-    };
-    
-    // 내가 댓글 단 글 로드 함수
-    const loadMyCommentedPosts = async () => {
-        try {
-            const myCommentedPostsResponse = await fetch(`${AUTH_API_BASE}/api/community/my/comments`, {
-                method: "GET",
-                credentials: "include"
-            });
-            if (myCommentedPostsResponse.ok) {
-                const posts = await myCommentedPostsResponse.json();
-                if (myCommentsList) {
-                    if (posts.length === 0) {
-                        myCommentsList.innerHTML = '<div class="empty-trading-list">댓글을 단 글이 없습니다.</div>';
-                    } else {
-                        myCommentsList.innerHTML = posts.map(post => `
-                            <div class="card" style="margin-bottom: 0.75rem; padding: 1rem; cursor: pointer;" onclick="window.location.href='community.html?post=${post.id}'">
-                                <div style="display: flex; justify-content: space-between; align-items: start; gap: 1rem;">
-                                    <div style="flex: 1;">
-                                        <h4 style="margin: 0 0 0.5rem; font-size: 1rem;">${post.title || "제목 없음"}</h4>
-                                        <p style="margin: 0; font-size: 0.9rem; color: var(--text-muted);">${(post.content || "").substring(0, 100)}${(post.content || "").length > 100 ? "..." : ""}</p>
-                                    </div>
-                                    <div style="display: flex; gap: 0.5rem; align-items: center; font-size: 0.85rem; color: var(--text-muted);">
-                                        <span>👍 ${post.upVotes || 0}</span>
-                                        <span>👎 ${post.downVotes || 0}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        `).join("");
-                    }
-                }
-            } else {
-                console.warn("내가 댓글 단 글 조회 실패:", myCommentedPostsResponse.status);
-                if (myCommentsList) {
-                    myCommentsList.innerHTML = '<div class="empty-trading-list">댓글을 단 글이 없습니다.</div>';
-                }
-            }
-        } catch (error) {
-            console.error("내가 댓글 단 글 조회 오류:", error);
-            if (myCommentsList) {
-                myCommentsList.innerHTML = '<div class="empty-trading-list">댓글을 단 글이 없습니다.</div>';
-            }
-        }
-    };
     
     const updateMeUI = async () => {
         if (authState.user) {
@@ -3656,46 +3495,6 @@ const initMe = async () => {
                     if (profileAvatarInitial) {
                         const initial = updatedDisplayName !== "-" ? updatedDisplayName.charAt(0).toUpperCase() : "-";
                         profileAvatarInitial.textContent = initial;
-                    }
-                }
-                
-                // 작성한 글 수 및 댓글 수 가져오기
-                try {
-                    console.log("통계 조회 시작:", `${AUTH_API_BASE}/api/community/my/stats`);
-                    const statsResponse = await fetch(`${AUTH_API_BASE}/api/community/my/stats`, {
-                        method: "GET",
-                        credentials: "include"
-                    });
-                    console.log("통계 조회 응답 상태:", statsResponse.status, statsResponse.statusText);
-                    
-                    if (statsResponse.ok) {
-                        const stats = await statsResponse.json();
-                        console.log("통계 데이터:", stats);
-                        if (profilePostsCount) {
-                            profilePostsCount.textContent = stats.postCount || 0;
-                            console.log("작성한 글 수 설정:", stats.postCount || 0);
-                        }
-                        if (profileCommentsCount) {
-                            profileCommentsCount.textContent = stats.commentCount || 0;
-                            console.log("댓글 수 설정:", stats.commentCount || 0);
-                        }
-                    } else {
-                        const errorText = await statsResponse.text();
-                        console.warn("통계 조회 실패:", statsResponse.status, errorText);
-                        if (profilePostsCount) {
-                            profilePostsCount.textContent = "0";
-                        }
-                        if (profileCommentsCount) {
-                            profileCommentsCount.textContent = "0";
-                        }
-                    }
-                } catch (error) {
-                    console.error("통계 조회 오류:", error);
-                    if (profilePostsCount) {
-                        profilePostsCount.textContent = "0";
-                    }
-                    if (profileCommentsCount) {
-                        profileCommentsCount.textContent = "0";
                     }
                 }
             } catch (error) {
@@ -3875,8 +3674,6 @@ const initProfileModal = () => {
                     profileActions.hidden = false;
                 }
                 
-                // 통계 데이터 로드 (에러가 나도 계속 진행)
-                loadProfileStats();
             } else {
                 // 로그인 안 됨
                 const profileNickname = document.getElementById("profile-nickname-modal");
@@ -3921,51 +3718,6 @@ const initProfileModal = () => {
     };
     
     // 통계 데이터 로드
-    const loadProfileStats = async () => {
-        // 작성한 글, 댓글 단 글 수 가져오기 (엔드포인트가 없을 수 있으므로 선택적 처리)
-        let postsCount = 0;
-        let commentsCount = 0;
-        
-        // 작성한 글 API 호출 (404 오류는 무시)
-        try {
-            const postsResponse = await fetch(`${AUTH_API_BASE}/api/posts/me`, {
-                method: "GET",
-                credentials: "include"
-            });
-            if (postsResponse.ok) {
-                const posts = await postsResponse.json();
-                postsCount = Array.isArray(posts) ? posts.length : 0;
-            }
-        } catch (e) {
-            // 네트워크 오류만 처리, 404는 조용히 무시
-            if (e.name !== 'TypeError') {
-                // 네트워크 오류가 아닌 경우만 로그
-            }
-        }
-        
-        // 댓글 API 호출 (404 오류는 무시)
-        try {
-            const commentsResponse = await fetch(`${AUTH_API_BASE}/api/comments/me`, {
-                method: "GET",
-                credentials: "include"
-            });
-            if (commentsResponse.ok) {
-                const comments = await commentsResponse.json();
-                commentsCount = Array.isArray(comments) ? comments.length : 0;
-            }
-        } catch (e) {
-            // 네트워크 오류만 처리, 404는 조용히 무시
-            if (e.name !== 'TypeError') {
-                // 네트워크 오류가 아닌 경우만 로그
-            }
-        }
-        
-        const postsCountEl = document.getElementById("profile-posts-count-modal");
-        const commentsCountEl = document.getElementById("profile-comments-count-modal");
-        
-        if (postsCountEl) postsCountEl.textContent = postsCount;
-        if (commentsCountEl) commentsCountEl.textContent = commentsCount;
-    };
     
     // 이벤트 리스너
     if (profileModalBtn) {
@@ -3995,8 +3747,6 @@ const initProfileModal = () => {
     
     // 내 정보 모달 내부의 버튼들 이벤트 연결
     const btnEditProfile = document.getElementById("btn-edit-profile-modal");
-    const profilePostsClickable = document.getElementById("profile-posts-clickable-modal");
-    const profileCommentsClickable = document.getElementById("profile-comments-clickable-modal");
     const profileLogout = document.getElementById("profile-auth-logout-modal");
     const profileDelete = document.getElementById("profile-delete-account-modal");
     
@@ -4158,41 +3908,6 @@ const initProfileModal = () => {
         });
     }
     
-    if (profilePostsClickable) {
-        profilePostsClickable.addEventListener("click", () => {
-            const myPostsModal = document.getElementById("my-posts-modal");
-            if (myPostsModal) {
-                myPostsModal.style.display = "flex";
-                myPostsModal.style.opacity = "1";
-                myPostsModal.style.visibility = "visible";
-                myPostsModal.classList.add("active");
-                const sideModal = myPostsModal.querySelector(".side-modal");
-                if (sideModal) {
-                    sideModal.classList.add("active");
-                }
-                // 작성한 글 로드
-                loadMyPosts();
-            }
-        });
-    }
-    
-    if (profileCommentsClickable) {
-        profileCommentsClickable.addEventListener("click", () => {
-            const myCommentsModal = document.getElementById("my-comments-modal");
-            if (myCommentsModal) {
-                myCommentsModal.style.display = "flex";
-                myCommentsModal.style.opacity = "1";
-                myCommentsModal.style.visibility = "visible";
-                myCommentsModal.classList.add("active");
-                const sideModal = myCommentsModal.querySelector(".side-modal");
-                if (sideModal) {
-                    sideModal.classList.add("active");
-                }
-                // 댓글 단 글 로드
-                loadMyComments();
-            }
-        });
-    }
     
     if (profileLogout) {
         profileLogout.addEventListener("click", async () => {
@@ -4226,141 +3941,6 @@ const initProfileModal = () => {
             }
         });
     }
-    
-    // 작성한 글 모달 닫기
-    const closeMyPostsModal = () => {
-        const myPostsModal = document.getElementById("my-posts-modal");
-        if (myPostsModal) {
-            const sideModal = myPostsModal.querySelector(".side-modal");
-            if (sideModal) {
-                sideModal.classList.remove("active");
-            }
-            setTimeout(() => {
-                myPostsModal.style.display = "none";
-                myPostsModal.style.opacity = "0";
-                myPostsModal.style.visibility = "hidden";
-                myPostsModal.classList.remove("active");
-            }, 300);
-        }
-    };
-    
-    const closeMyPostsBtn = document.getElementById("close-my-posts-modal");
-    if (closeMyPostsBtn) {
-        closeMyPostsBtn.addEventListener("click", closeMyPostsModal);
-    }
-    
-    const myPostsModal = document.getElementById("my-posts-modal");
-    if (myPostsModal) {
-        myPostsModal.addEventListener("click", (e) => {
-            if (e.target === myPostsModal) {
-                closeMyPostsModal();
-            }
-        });
-    }
-    
-    // 댓글 단 글 모달 닫기
-    const closeMyCommentsModal = () => {
-        const myCommentsModal = document.getElementById("my-comments-modal");
-        if (myCommentsModal) {
-            const sideModal = myCommentsModal.querySelector(".side-modal");
-            if (sideModal) {
-                sideModal.classList.remove("active");
-            }
-            setTimeout(() => {
-                myCommentsModal.style.display = "none";
-                myCommentsModal.style.opacity = "0";
-                myCommentsModal.style.visibility = "hidden";
-                myCommentsModal.classList.remove("active");
-            }, 300);
-        }
-    };
-    
-    const closeMyCommentsBtn = document.getElementById("close-my-comments-modal");
-    if (closeMyCommentsBtn) {
-        closeMyCommentsBtn.addEventListener("click", closeMyCommentsModal);
-    }
-    
-    const myCommentsModalEl = document.getElementById("my-comments-modal");
-    if (myCommentsModalEl) {
-        myCommentsModalEl.addEventListener("click", (e) => {
-            if (e.target === myCommentsModalEl) {
-                closeMyCommentsModal();
-            }
-        });
-    }
-    
-    // 작성한 글 로드
-    const loadMyPosts = async () => {
-        const myPostsList = document.getElementById("my-posts-list");
-        if (!myPostsList) return;
-        
-        try {
-            const response = await fetch(`${AUTH_API_BASE}/api/posts/me`, {
-                method: "GET",
-                credentials: "include"
-            });
-            
-            if (response.ok) {
-                const posts = await response.json();
-                if (posts.length === 0) {
-                    myPostsList.innerHTML = "<div class='empty-trading-list'>작성한 글이 없습니다.</div>";
-                } else {
-                    myPostsList.innerHTML = posts.map(post => `
-                        <div class="trading-item">
-                            <div class="trading-item-header">
-                                <span class="trading-item-stock">${post.title}</span>
-                            </div>
-                            <div class="trading-item-content">${post.content.substring(0, 100)}...</div>
-                        </div>
-                    `).join("");
-                }
-            } else if (response.status === 404) {
-                // 엔드포인트가 없으면 빈 메시지 표시
-                myPostsList.innerHTML = "<div class='empty-trading-list'>작성한 글이 없습니다.</div>";
-            }
-        } catch (error) {
-            // 네트워크 오류만 로그, 404는 조용히 처리
-            if (error.name === 'TypeError') {
-                myPostsList.innerHTML = "<div class='empty-trading-list'>작성한 글이 없습니다.</div>";
-            }
-        }
-    };
-    
-    // 댓글 단 글 로드
-    const loadMyComments = async () => {
-        const myCommentsList = document.getElementById("my-comments-list");
-        if (!myCommentsList) return;
-        
-        try {
-            const response = await fetch(`${AUTH_API_BASE}/api/comments/me`, {
-                method: "GET",
-                credentials: "include"
-            });
-            
-            if (response.ok) {
-                const comments = await response.json();
-                if (comments.length === 0) {
-                    myCommentsList.innerHTML = "<div class='empty-trading-list'>댓글을 단 글이 없습니다.</div>";
-                } else {
-                    myCommentsList.innerHTML = comments.map(comment => `
-                        <div class="trading-item">
-                            <div class="trading-item-header">
-                                <span class="trading-item-stock">${comment.content.substring(0, 50)}...</span>
-                            </div>
-                        </div>
-                    `).join("");
-                }
-            } else if (response.status === 404) {
-                // 엔드포인트가 없으면 빈 메시지 표시
-                myCommentsList.innerHTML = "<div class='empty-trading-list'>댓글을 단 글이 없습니다.</div>";
-            }
-        } catch (error) {
-            // 네트워크 오류만 로그, 404는 조용히 처리
-            if (error.name === 'TypeError') {
-                myCommentsList.innerHTML = "<div class='empty-trading-list'>댓글을 단 글이 없습니다.</div>";
-            }
-        }
-    };
     
     // 비밀번호 변경 폼 제출 (대시보드 내 정보 모달)
     const changePasswordFormModal = document.getElementById("change-password-form");
@@ -4872,6 +4452,8 @@ const initDashboard = () => {
 
             debugLog(`차트 데이터 요청: symbol=${currentSymbol}, resolution=${currentInterval.toString()}, rangeDays=${rangeDays}`);
             const response = await fetch(`${API_BASE}/api/market/candles?symbol=${currentSymbol}&resolution=${currentInterval.toString()}&range_days=${rangeDays}`);
+            
+            debugLog(`차트 데이터 응답 상태: ${response.status} ${response.statusText}`);
 
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({ detail: "차트 데이터를 불러올 수 없습니다." }));
@@ -4879,12 +4461,14 @@ const initDashboard = () => {
             }
 
             const data = await response.json();
+            debugLog(`차트 데이터 수신: timestamps=${data?.data?.timestamps?.length || 0}개`);
 
             // 데이터 유효성 검사
             if (!data || !data.data || !data.data.timestamps || data.data.timestamps.length === 0) {
                 throw new Error("차트 데이터가 비어있습니다.");
             }
 
+            debugLog("차트 렌더링 시작");
             renderChart(data);
             updatePriceInfo(data);
             
@@ -8133,7 +7717,12 @@ const initDashboard = () => {
             // 스프레드 제거됨
 
         } catch (error) {
-            console.warn("호가 데이터 로드 실패:", error);
+            console.error("호가 데이터 로드 실패:", error);
+            console.error("호가 오류 상세:", {
+                message: error.message,
+                stack: error.stack,
+                name: error.name
+            });
             // 실패 시 기존 더미 데이터 유지하거나 에러 표시 (여기서는 조용히 실패)
         }
     };

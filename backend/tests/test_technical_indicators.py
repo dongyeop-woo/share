@@ -13,7 +13,10 @@ import sys
 import os
 
 # app.py의 함수들을 import
-sys.path.append(os.path.dirname(__file__))
+# tests 폴더에서 상위 폴더(backend)를 경로에 추가
+backend_dir = os.path.dirname(os.path.dirname(__file__))
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
 from app import (
     detect_support_resistance,
     detect_trend_lines,

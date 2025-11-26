@@ -2258,14 +2258,20 @@ async def test_additional_indicators(symbol: str = Query(..., description="종�
     추가 기술적 지표 신뢰도 테스트 실행 (RSI, MACD, 볼린저 밴드, 리스크)
     """
     try:
-        script_path = os.path.join(os.path.dirname(__file__), "test_additional_indicators.py")
+        script_path = os.path.join(os.path.dirname(__file__), "tests", "test_additional_indicators.py")
+        # 스크립트 실행 시 backend 디렉토리를 작업 디렉토리로 설정
+        backend_dir = os.path.dirname(__file__)
+        env = os.environ.copy()
+        env['PYTHONIOENCODING'] = 'utf-8'
         result = subprocess.run(
             [sys.executable, script_path, "--symbol", symbol, "--format", "text"],
             capture_output=True,
             text=True,
-            timeout=180,
             encoding='utf-8',
-            errors='replace'
+            errors='replace',
+            timeout=180,
+            env=env,
+            cwd=backend_dir  # 작업 디렉토리를 backend로 설정
         )
         
         if result.returncode != 0:
@@ -2298,13 +2304,15 @@ async def test_technical_indicators(symbol: str = Query(..., description="종목
     """
     try:
         # test_technical_indicators.py 스크립트 실행
-        script_path = os.path.join(os.path.dirname(__file__), "test_technical_indicators.py")
+        script_path = os.path.join(os.path.dirname(__file__), "tests", "test_technical_indicators.py")
         
         # Python 스크립트를 실행하여 결과 가져오기
         # Windows에서 UTF-8 인코딩 강제
         env = os.environ.copy()
         env['PYTHONIOENCODING'] = 'utf-8'
         
+        # 스크립트 실행 시 backend 디렉토리를 작업 디렉토리로 설정
+        backend_dir = os.path.dirname(__file__)
         result = subprocess.run(
             [sys.executable, script_path, "--symbol", symbol, "--format", "text"],
             capture_output=True,
@@ -2312,7 +2320,8 @@ async def test_technical_indicators(symbol: str = Query(..., description="종목
             encoding='utf-8',
             errors='replace',  # 인코딩 오류 시 대체 문자 사용
             timeout=180,  # 3분 타임아웃
-            env=env
+            env=env,
+            cwd=backend_dir  # 작업 디렉토리를 backend로 설정
         )
         
         if result.returncode != 0:
