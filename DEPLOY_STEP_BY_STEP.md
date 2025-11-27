@@ -22,7 +22,7 @@ cd C:\coding\share
 cd C:\coding\share
 
 # 새로 압축 파일 만들기
-tar -czf share-deploy.tar.gz *.html server.py run_backend.py assets backend/app.py backend/requirements.txt backend/services
+tar -czf share-deploy.tar.gz *.html server.py run_backend.py assets backend/app.py backend/requirements.txt backend/services backend/tests
 
 # 스크립트와 압축 파일 전송
 scp -i "C:\coding\share-backend-key.pem" cleanup-and-deploy.sh ubuntu@54.253.167.33:~/

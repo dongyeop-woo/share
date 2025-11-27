@@ -2303,8 +2303,29 @@ async def test_technical_indicators(symbol: str = Query(..., description="종목
     기술적 지표 신뢰도 테스트 실행
     """
     try:
-        # test_technical_indicators.py 스크립트 실행
-        script_path = os.path.join(os.path.dirname(__file__), "tests", "test_technical_indicators.py")
+        # test_technical_indicators.py 스크립트 경로 찾기
+        backend_dir = os.path.dirname(__file__)
+        script_path = os.path.join(backend_dir, "tests", "test_technical_indicators.py")
+        
+        # 파일 존재 여부 확인
+        if not os.path.exists(script_path):
+            # 대체 경로 시도: 상위 디렉토리의 backend/tests
+            alt_path = os.path.join(os.path.dirname(backend_dir), "backend", "tests", "test_technical_indicators.py")
+            if os.path.exists(alt_path):
+                script_path = alt_path
+                backend_dir = os.path.dirname(alt_path)
+            else:
+                # 파일이 없는 경우 상세한 에러 메시지 반환
+                expected_paths = [
+                    os.path.join(backend_dir, "tests", "test_technical_indicators.py"),
+                    alt_path
+                ]
+                return {
+                    "success": False,
+                    "error": f"테스트 파일을 찾을 수 없습니다. 예상 경로: {expected_paths}",
+                    "backend_dir": backend_dir,
+                    "current_file": __file__
+                }
         
         # Python 스크립트를 실행하여 결과 가져오기
         # Windows에서 UTF-8 인코딩 강제
@@ -2312,7 +2333,6 @@ async def test_technical_indicators(symbol: str = Query(..., description="종목
         env['PYTHONIOENCODING'] = 'utf-8'
         
         # 스크립트 실행 시 backend 디렉토리를 작업 디렉토리로 설정
-        backend_dir = os.path.dirname(__file__)
         result = subprocess.run(
             [sys.executable, script_path, "--symbol", symbol, "--format", "text"],
             capture_output=True,
@@ -2328,7 +2348,8 @@ async def test_technical_indicators(symbol: str = Query(..., description="종목
             return {
                 "success": False,
                 "error": result.stderr or "테스트 실행 실패",
-                "output": result.stdout
+                "output": result.stdout,
+                "script_path": script_path
             }
         
         # 텍스트 리포트 반환

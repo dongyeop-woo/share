@@ -1,0 +1,28 @@
+모바일 로그인 "load failed" 문제 해결
+=====================================
+
+먼저 다음을 확인하세요:
+
+1. Spring Boot 상태:
+   sudo systemctl status share-springboot
+   sudo ss -tlnp | grep :8001
+
+2. API 테스트:
+   cd ~
+   chmod +x test-login-api.sh
+   sudo ./test-login-api.sh
+
+3. Nginx 로그:
+   sudo tail -50 /var/log/nginx/error.log
+
+4. Spring Boot 로그:
+   sudo journalctl -u share-springboot -n 100 | tail -30
+
+가능한 원인:
+- Spring Boot가 응답하지 않음
+- Nginx 프록시 오류
+- CORS 문제
+- 세션/Cookie 문제
+
+결과를 알려주시면 다음 단계 진행하겠습니다!
+

@@ -57,7 +57,7 @@ cd C:\coding\share
 cd C:\coding\share
 
 # 파일 압축
-tar -czf deploy.tar.gz *.html server.py run_backend.py assets backend/app.py backend/requirements.txt backend/services
+tar -czf deploy.tar.gz *.html server.py run_backend.py assets backend/app.py backend/requirements.txt backend/services backend/tests
 
 # EC2로 전송
 scp -i "C:\coding\share-backend-key.pem" deploy.tar.gz ubuntu@54.253.167.33:/tmp/

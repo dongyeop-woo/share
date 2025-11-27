@@ -1,0 +1,21 @@
+Spring Boot 상태 빠른 확인
+==========================
+
+1. 포트 확인 (가장 중요):
+   sudo ss -tlnp | grep :8001
+
+2. 서비스 상태:
+   sudo systemctl status share-springboot
+
+3. 최근 로그 확인:
+   sudo journalctl -u share-springboot -n 50
+
+4. 실시간 로그 (데이터베이스 연결 확인):
+   sudo journalctl -u share-springboot -f
+
+5. API 테스트 (포트가 열리면):
+   curl http://localhost:8001/api/auth/me
+
+참고: 데이터베이스 연결에 10-15초 정도 걸릴 수 있습니다.
+      "Started ShareApplication" 메시지가 보이면 성공입니다.
+

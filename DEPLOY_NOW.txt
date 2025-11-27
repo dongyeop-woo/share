@@ -1,0 +1,21 @@
+업데이트된 JAR 및 application.yml 배포
+=========================================
+
+다음 명령어를 SSH에서 실행하세요:
+
+cd ~
+chmod +x deploy-updated-jar.sh
+sudo ./deploy-updated-jar.sh
+
+이 스크립트가:
+1. 기존 서비스 중지
+2. 새 JAR 및 application.yml 복사
+3. Spring Boot 시작
+4. 상태 및 로그 확인
+
+업데이트된 설정:
+- username: admin
+- password: skdus4972
+
+배포 후 포트 8001이 리스닝하는지 확인하세요!
+

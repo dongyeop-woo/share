@@ -39,11 +39,11 @@ foreach ($pattern in $FilesToInclude) {
 }
 
 foreach ($dir in $DirectoriesToInclude) {
-    $destDir = Join-Path $TempDir $dir
-    New-Item -ItemType Directory -Path $destDir -Force | Out-Null
-    
     # backend 디렉토리: 특정 파일만 복사
     if ($dir -eq "backend") {
+        $destDir = Join-Path $TempDir $dir
+        New-Item -ItemType Directory -Path $destDir -Force | Out-Null
+        
         $BackendFiles = @(
             "app.py",
             "requirements.txt",
@@ -63,8 +63,22 @@ foreach ($dir in $DirectoriesToInclude) {
             New-Item -ItemType Directory -Path $servicesDest -Force | Out-Null
             Copy-Item -Path "backend\services\*.py" -Destination $servicesDest -Exclude "__pycache__"
         }
+        
+        # tests 디렉토리 (테스트 파일 포함)
+        if (Test-Path "backend\tests") {
+            $testsDest = Join-Path $destDir "tests"
+            New-Item -ItemType Directory -Path $testsDest -Force | Out-Null
+            Copy-Item -Path "backend\tests\*.py" -Destination $testsDest -Exclude "__pycache__"
+            # README 파일도 복사
+            if (Test-Path "backend\tests\*.md") {
+                Copy-Item -Path "backend\tests\*.md" -Destination $testsDest
+            }
+        }
     } else {
-        Copy-Item -Path $dir -Destination $TempDir -Recurse -Exclude "__pycache__","*.pyc"
+        # assets 디렉토리: 전체 복사 (이미 존재하면 덮어쓰기)
+        if (Test-Path $dir) {
+            Copy-Item -Path $dir -Destination $TempDir -Recurse -Exclude "__pycache__","*.pyc" -Force
+        }
     }
 }
 
@@ -82,8 +96,6 @@ dist/
 build/
 .env
 *.log
-tests/
-test_*.py
 debug_*.py
 inspect_*.py
 docs/
@@ -105,8 +117,8 @@ Write-Host "압축 파일: $ArchivePath"
 
 Write-Host "`n[3/6] EC2로 파일 전송 중..." -ForegroundColor Yellow
 
-# 6. EC2로 전송
-$RemoteTempPath = "/tmp/share-deploy.tar.gz"
+# 6. EC2로 전송 (홈 디렉토리 사용 - 권한 문제 해결)
+$RemoteTempPath = "~/share-deploy.tar.gz"
 
 try {
     scp -i $KeyPath -o StrictHostKeyChecking=no $ArchivePath "${RemoteUser}@${InstanceIP}:${RemoteTempPath}"
@@ -118,22 +130,26 @@ try {
 
 Write-Host "`n[4/6] 배포 스크립트 전송 중..." -ForegroundColor Yellow
 
-# 7. 배포 스크립트 전송
+# 7. 배포 스크립트 전송 (줄바꿈 변환: CRLF -> LF)
 $DeployScript = Join-Path $ProjectRoot "deploy-on-server.sh"
 if (Test-Path $DeployScript) {
-    scp -i $KeyPath -o StrictHostKeyChecking=no $DeployScript "${RemoteUser}@${InstanceIP}:/tmp/deploy-on-server.sh"
+    # 임시 파일 생성 (LF 줄바꿈)
+    $TempScript = Join-Path $env:TEMP "deploy-on-server-lf.sh"
+    $content = Get-Content $DeployScript -Raw
+    $content = $content -replace "`r`n", "`n" -replace "`r", "`n"
+    [System.IO.File]::WriteAllText($TempScript, $content, [System.Text.UTF8Encoding]::new($false))
+    
+    scp -i $KeyPath -o StrictHostKeyChecking=no $TempScript "${RemoteUser}@${InstanceIP}:~/deploy-on-server.sh"
+    Remove-Item $TempScript -Force -ErrorAction SilentlyContinue
+    Write-Host "전송 완료" -ForegroundColor Green
 } else {
     Write-Host "경고: deploy-on-server.sh 파일을 찾을 수 없습니다. 수동으로 실행해야 합니다." -ForegroundColor Yellow
 }
 
 Write-Host "`n[5/6] EC2에서 배포 실행 중..." -ForegroundColor Yellow
 
-# 8. EC2에서 배포 스크립트 실행
-$DeployCommand = @"
-cd /tmp && \
-chmod +x deploy-on-server.sh && \
-sudo ./deploy-on-server.sh
-"@
+# 8. EC2에서 배포 스크립트 실행 (홈 디렉토리 사용)
+$DeployCommand = "cd ~ && chmod +x deploy-on-server.sh && sudo cp ~/share-deploy.tar.gz /tmp/share-deploy.tar.gz && sudo ~/deploy-on-server.sh"
 
 try {
     ssh -i $KeyPath -o StrictHostKeyChecking=no "${RemoteUser}@${InstanceIP}" $DeployCommand
@@ -142,7 +158,7 @@ try {
     Write-Host "배포 실행 실패: $_" -ForegroundColor Red
     Write-Host "수동으로 SSH 접속하여 실행해주세요:" -ForegroundColor Yellow
     Write-Host "  ssh -i `"$KeyPath`" ${RemoteUser}@${InstanceIP}" -ForegroundColor Yellow
-    Write-Host "  cd /tmp && chmod +x deploy-on-server.sh && sudo ./deploy-on-server.sh" -ForegroundColor Yellow
+    Write-Host "  cd ~ && chmod +x deploy-on-server.sh && sudo cp ~/share-deploy.tar.gz /tmp/share-deploy.tar.gz && sudo ~/deploy-on-server.sh" -ForegroundColor Yellow
 }
 
 Write-Host "`n[6/6] 임시 파일 정리 중..." -ForegroundColor Yellow

@@ -45,7 +45,7 @@ cd C:\coding\share
 # 또는 WinRAR로 수동 압축 (ZIP 형식)
 
 # tar 사용 (Windows 10+)
-tar -czf deploy.tar.gz *.html server.py run_backend.py assets backend/app.py backend/requirements.txt backend/services
+tar -czf deploy.tar.gz *.html server.py run_backend.py assets backend/app.py backend/requirements.txt backend/services backend/tests
 ```
 
 ### 2. EC2로 전송

@@ -1,0 +1,14 @@
+파일 경로 문제로 인해 직접 명령어 실행:
+
+========================================
+sudo systemctl stop share-springboot
+sudo cp /home/ubuntu/share-0.0.1-SNAPSHOT.jar /opt/share-springboot/
+sudo systemctl start share-springboot
+sudo systemctl status share-springboot
+========================================
+
+또는 수정된 스크립트 실행:
+
+chmod +x update-springboot-jar.sh
+sudo ./update-springboot-jar.sh
+

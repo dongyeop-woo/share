@@ -37,7 +37,7 @@ if (Test-Path "C:\Users\dongy\AppData\Local\Temp\share-deploy-20251126125026.tar
     scp -i "C:\coding\share-backend-key.pem" "C:\Users\dongy\AppData\Local\Temp\share-deploy-20251126125026.tar.gz" ubuntu@54.253.167.33:~/share-deploy.tar.gz
 } else {
     # 새로 압축
-    tar -czf share-deploy.tar.gz *.html server.py run_backend.py assets backend/app.py backend/requirements.txt backend/services
+    tar -czf share-deploy.tar.gz *.html server.py run_backend.py assets backend/app.py backend/requirements.txt backend/services backend/tests
     scp -i "C:\coding\share-backend-key.pem" share-deploy.tar.gz ubuntu@54.253.167.33:~/
 }
 ```
