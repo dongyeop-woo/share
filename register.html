@@ -70,6 +70,25 @@
             <a href="index.html?view=journal#recommendations">추천 종목</a>
         </nav>
     </footer>
+
+    <script>
+        // GitHub Pages에서 직접 register.html을 열었을 때도
+        // 자동으로 ?env=dev를 붙여서 로컬 백엔드를 사용하도록 리다이렉트
+        (function () {
+            const isGithubHost = window.location.hostname === "dongyeop-woo.github.io" ||
+                                 window.location.hostname.endsWith(".github.io");
+            if (!isGithubHost) return;
+
+            const url = new URL(window.location.href);
+            const params = url.searchParams;
+
+            // 이미 env / backend 파라미터가 있으면 그대로 둠
+            if (params.has("env") || params.has("backend")) return;
+
+            params.set("env", "dev");
+            window.location.replace(url.toString());
+        })();
+    </script>
 </body>
 </html>
 
