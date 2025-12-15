@@ -1,40 +1,26 @@
-// Use current host to support mobile access over LAN (avoid hardcoded localhost)
+// 로컬/개발 환경용 기본 호스트
 const CURRENT_HOST = window.location.hostname || "localhost";
 
-// URL 쿼리로 로컬 백엔드 강제 사용 여부 결정 (?env=dev 또는 ?backend=local)
-const urlParams = new URLSearchParams(window.location.search);
-const FORCE_LOCAL_BACKEND =
-    urlParams.get("env") === "dev" ||
-    urlParams.get("env") === "local" ||
-    urlParams.get("backend") === "local";
-
-// 프로덕션 환경 감지 (GitHub Pages 또는 도메인)
-const isProductionHost = window.location.hostname === 'dongyeop-woo.github.io' || 
-                         window.location.hostname.endsWith('.github.io') ||
-                         window.location.hostname === 'tradenotekr.com' ||
-                         window.location.hostname === 'www.tradenotekr.com' ||
-                         (window.location.hostname !== 'localhost' && 
-                          !window.location.hostname.startsWith('192.168.') && 
-                          !window.location.hostname.startsWith('127.0.0.1') &&
-                          !window.location.hostname.startsWith('10.0.') &&
-                          window.location.port === '');  // 포트가 없으면 프로덕션으로 간주
-
-// 쿼리로 로컬 강제 시에는 프로덕션 호스트에서도 개발 모드처럼 동작
-const isProduction = isProductionHost && !FORCE_LOCAL_BACKEND;
+// "실제 프로덕션"은 오직 tradenotekr.com 도메인만 취급
+const isProduction =
+    window.location.hostname === "tradenotekr.com" ||
+    window.location.hostname === "www.tradenotekr.com";
 
 // 프로덕션에서 console.log 제거를 위한 유틸리티
 const debugLog = isProduction ? () => {} : console.log.bind(console);
 const debugWarn = isProduction ? () => {} : console.warn.bind(console);
 const debugError = console.error.bind(console); // 에러는 항상 표시
 
-// 프로덕션에서는 도메인 사용 (HTTPS), 개발/로컬 강제 시에는 로컬 호스트 사용
-const API_BASE = isProduction 
-    ? 'https://tradenotekr.com'  // FastAPI (Nginx를 통해 /api/ 경로로 라우팅, HTTPS)
-    : `http://${CURRENT_HOST}:8000`;
+// API 엔드포인트 기본 URL
+// - 프로덕션(tradenotekr.com): HTTPS 도메인 사용
+// - 그 외(로컬 서버, GitHub Pages 등): 항상 localhost 백엔드 사용
+const API_BASE = isProduction
+    ? "https://tradenotekr.com"      // FastAPI (Nginx를 통해 /api/ 경로로 라우팅, HTTPS)
+    : "http://localhost:8000";       // 개발/테스트: 로컬 FastAPI
 
 const AUTH_API_BASE = isProduction
-    ? 'https://tradenotekr.com'  // Spring Boot (Nginx를 통해 /api/auth 경로로 라우팅, HTTPS)
-    : `http://${CURRENT_HOST}:8001`;
+    ? "https://tradenotekr.com"      // Spring Boot (Nginx를 통해 /api/auth 경로로 라우팅, HTTPS)
+    : "http://localhost:8001";       // 개발/테스트: 로컬 Spring Boot
 
 const AUTH_STORAGE_KEY = "breakingShareUser";
 const THEME_STORAGE_KEY = "tradeNoteTheme";
