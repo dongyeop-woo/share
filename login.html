@@ -50,7 +50,11 @@
             </form>
             <div style="text-align: center; margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--card-border);">
                 <p style="color: var(--text-muted); margin: 0 0 0.75rem;">계정이 없으신가요?</p>
-                <a href="register.html" class="auth-trigger" style="display: inline-block;">회원가입</a>
+                <!--
+                    GitHub Pages(dongyeop-woo.github.io)에서 열 때도 로컬 백엔드로 연결되도록,
+                    회원가입 링크에 쿼리스트링을 자동으로 붙입니다.
+                -->
+                <a href="register.html" id="register-link" class="auth-trigger" style="display: inline-block;">회원가입</a>
             </div>
         </article>
     </main>
@@ -66,6 +70,27 @@
             <a href="index.html?view=journal#recommendations">추천 종목</a>
         </nav>
     </footer>
+
+    <script>
+        // 로그인 페이지에서 "회원가입" 클릭 시,
+        // GitHub Pages에서도 자동으로 ?env=dev를 붙여서 로컬 백엔드로 향하게 함.
+        (function () {
+            const link = document.getElementById("register-link");
+            if (!link) return;
+
+            const isGithubHost = window.location.hostname === "dongyeop-woo.github.io" ||
+                                 window.location.hostname.endsWith(".github.io");
+
+            if (isGithubHost) {
+                const target = new URL(link.getAttribute("href"), window.location.href);
+                const params = target.searchParams;
+                if (!params.has("env") && !params.has("backend")) {
+                    params.set("env", "dev");
+                }
+                link.setAttribute("href", target.toString());
+            }
+        })();
+    </script>
 </body>
 </html>
 

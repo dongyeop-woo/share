@@ -1,23 +1,33 @@
 // Use current host to support mobile access over LAN (avoid hardcoded localhost)
 const CURRENT_HOST = window.location.hostname || "localhost";
 
+// URL 쿼리로 로컬 백엔드 강제 사용 여부 결정 (?env=dev 또는 ?backend=local)
+const urlParams = new URLSearchParams(window.location.search);
+const FORCE_LOCAL_BACKEND =
+    urlParams.get("env") === "dev" ||
+    urlParams.get("env") === "local" ||
+    urlParams.get("backend") === "local";
+
 // 프로덕션 환경 감지 (GitHub Pages 또는 도메인)
-const isProduction = window.location.hostname === 'dongyeop-woo.github.io' || 
-                     window.location.hostname.endsWith('.github.io') ||
-                     window.location.hostname === 'tradenotekr.com' ||
-                     window.location.hostname === 'www.tradenotekr.com' ||
-                     (window.location.hostname !== 'localhost' && 
-                      !window.location.hostname.startsWith('192.168.') && 
-                      !window.location.hostname.startsWith('127.0.0.1') &&
-                      !window.location.hostname.startsWith('10.0.') &&
-                      window.location.port === '');  // 포트가 없으면 프로덕션으로 간주
+const isProductionHost = window.location.hostname === 'dongyeop-woo.github.io' || 
+                         window.location.hostname.endsWith('.github.io') ||
+                         window.location.hostname === 'tradenotekr.com' ||
+                         window.location.hostname === 'www.tradenotekr.com' ||
+                         (window.location.hostname !== 'localhost' && 
+                          !window.location.hostname.startsWith('192.168.') && 
+                          !window.location.hostname.startsWith('127.0.0.1') &&
+                          !window.location.hostname.startsWith('10.0.') &&
+                          window.location.port === '');  // 포트가 없으면 프로덕션으로 간주
+
+// 쿼리로 로컬 강제 시에는 프로덕션 호스트에서도 개발 모드처럼 동작
+const isProduction = isProductionHost && !FORCE_LOCAL_BACKEND;
 
 // 프로덕션에서 console.log 제거를 위한 유틸리티
 const debugLog = isProduction ? () => {} : console.log.bind(console);
 const debugWarn = isProduction ? () => {} : console.warn.bind(console);
 const debugError = console.error.bind(console); // 에러는 항상 표시
 
-// 프로덕션에서는 도메인 사용 (HTTPS), 개발 환경에서는 로컬 호스트 사용
+// 프로덕션에서는 도메인 사용 (HTTPS), 개발/로컬 강제 시에는 로컬 호스트 사용
 const API_BASE = isProduction 
     ? 'https://tradenotekr.com'  // FastAPI (Nginx를 통해 /api/ 경로로 라우팅, HTTPS)
     : `http://${CURRENT_HOST}:8000`;
